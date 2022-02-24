@@ -1,0 +1,14 @@
+usage: main.py
+       [-h]
+       [--lambda_cd LAMBDA_CD]
+       [--dim_neck DIM_NECK]
+       [--dim_emb DIM_EMB]
+       [--dim_pre DIM_PRE]
+       [--freq FREQ]
+       [--data_dir DATA_DIR]
+       [--batch_size BATCH_SIZE]
+       [--num_iters NUM_ITERS]
+       [--len_crop LEN_CROP]
+       [--lr LR]
+       [--log_step LOG_STEP]
+main.py: error: unrecognized arguments: output.out

@@ -1,0 +1,24 @@
+Namespace(lambda_cd=1, dim_neck=16, dim_emb=256, dim_pre=512, freq=16, data_dir='./spmel', batch_size=2, num_iters=1000, len_crop=128, log_step=10)
+Finished loading the dataset...
+Start training...
+/zhome/f6/e/127187/Desktop/autovc/solver_encoder.py:99: UserWarning: Using a target size (torch.Size([2, 1, 128, 80])) that is different to the input size (torch.Size([2, 128, 80])). This will likely lead to incorrect results due to broadcasting. Please ensure they have the same size.
+  g_loss_id = F.mse_loss(x_real, x_identic)
+/zhome/f6/e/127187/Desktop/autovc/solver_encoder.py:100: UserWarning: Using a target size (torch.Size([2, 1, 128, 80])) that is different to the input size (torch.Size([2, 128, 80])). This will likely lead to incorrect results due to broadcasting. Please ensure they have the same size.
+  g_loss_id_psnt = F.mse_loss(x_real, x_identic_psnt)
+Elapsed [0:00:48], Iteration [10/1000], G/loss_id: 0.1132, G/loss_id_psnt: 1.0974, G/loss_cd: 0.1081
+Elapsed [0:01:33], Iteration [20/1000], G/loss_id: 0.0454, G/loss_id_psnt: 0.9707, G/loss_cd: 0.1230
+Elapsed [0:02:18], Iteration [30/1000], G/loss_id: 0.0517, G/loss_id_psnt: 0.8227, G/loss_cd: 0.1069
+Traceback (most recent call last):
+  File "/zhome/f6/e/127187/Desktop/autovc/main.py", line 46, in <module>
+    main(config)
+  File "/zhome/f6/e/127187/Desktop/autovc/main.py", line 20, in main
+    solver.train()
+  File "/zhome/f6/e/127187/Desktop/autovc/solver_encoder.py", line 110, in train
+    g_loss.backward()
+  File "/zhome/f6/e/127187/.local/lib/python3.9/site-packages/torch/_tensor.py", line 307, in backward
+    torch.autograd.backward(self, gradient, retain_graph, create_graph, inputs=inputs)
+  File "/zhome/f6/e/127187/.local/lib/python3.9/site-packages/torch/autograd/__init__.py", line 154, in backward
+    Variable._execution_engine.run_backward(
+  File "/zhome/f6/e/127187/.local/lib/python3.9/site-packages/wandb/wandb_torch.py", line 282, in <lambda>
+    handle = var.register_hook(lambda grad: _callback(grad, log_track))
+KeyboardInterrupt

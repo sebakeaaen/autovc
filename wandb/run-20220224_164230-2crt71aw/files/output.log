@@ -1,0 +1,160 @@
+Namespace(lambda_cd=1, dim_neck=16, dim_emb=256, dim_pre=512, freq=16, data_dir='./spmel', batch_size=2, num_iters=100000, len_crop=128, log_step=10)
+Finished loading the dataset...
+/zhome/f6/e/127187/Desktop/autovc/solver_encoder.py:99: UserWarning: Using a target size (torch.Size([2, 1, 128, 80])) that is different to the input size (torch.Size([2, 128, 80])). This will likely lead to incorrect results due to broadcasting. Please ensure they have the same size.
+  g_loss_id = F.mse_loss(x_real, x_identic)
+/zhome/f6/e/127187/Desktop/autovc/solver_encoder.py:100: UserWarning: Using a target size (torch.Size([2, 1, 128, 80])) that is different to the input size (torch.Size([2, 128, 80])). This will likely lead to incorrect results due to broadcasting. Please ensure they have the same size.
+  g_loss_id_psnt = F.mse_loss(x_real, x_identic_psnt)
+Start training...
+Elapsed [0:00:02], Iteration [10/100000], G/loss_id: 0.1281, G/loss_id_psnt: 1.0972, G/loss_cd: 0.1159
+Elapsed [0:00:05], Iteration [20/100000], G/loss_id: 0.0586, G/loss_id_psnt: 0.8302, G/loss_cd: 0.1015
+Elapsed [0:00:08], Iteration [30/100000], G/loss_id: 0.1145, G/loss_id_psnt: 0.5702, G/loss_cd: 0.0995
+Elapsed [0:00:12], Iteration [40/100000], G/loss_id: 0.2588, G/loss_id_psnt: 0.3722, G/loss_cd: 0.0837
+Elapsed [0:00:15], Iteration [50/100000], G/loss_id: 0.2439, G/loss_id_psnt: 0.3368, G/loss_cd: 0.0813
+Elapsed [0:00:18], Iteration [60/100000], G/loss_id: 0.2517, G/loss_id_psnt: 0.3230, G/loss_cd: 0.0730
+Elapsed [0:00:22], Iteration [70/100000], G/loss_id: 0.2053, G/loss_id_psnt: 0.3883, G/loss_cd: 0.0749
+Elapsed [0:00:24], Iteration [80/100000], G/loss_id: 0.2039, G/loss_id_psnt: 0.3515, G/loss_cd: 0.0703
+Elapsed [0:00:27], Iteration [90/100000], G/loss_id: 0.2847, G/loss_id_psnt: 0.2727, G/loss_cd: 0.0551
+Elapsed [0:00:29], Iteration [100/100000], G/loss_id: 0.2859, G/loss_id_psnt: 0.2532, G/loss_cd: 0.0529
+Elapsed [0:00:32], Iteration [110/100000], G/loss_id: 0.2076, G/loss_id_psnt: 0.3454, G/loss_cd: 0.0491
+Elapsed [0:00:35], Iteration [120/100000], G/loss_id: 0.2818, G/loss_id_psnt: 0.2657, G/loss_cd: 0.0463
+Elapsed [0:00:37], Iteration [130/100000], G/loss_id: 0.2712, G/loss_id_psnt: 0.2621, G/loss_cd: 0.0426
+Elapsed [0:00:40], Iteration [140/100000], G/loss_id: 0.2740, G/loss_id_psnt: 0.2604, G/loss_cd: 0.0415
+Elapsed [0:00:43], Iteration [150/100000], G/loss_id: 0.2570, G/loss_id_psnt: 0.2743, G/loss_cd: 0.0449
+Elapsed [0:00:46], Iteration [160/100000], G/loss_id: 0.2630, G/loss_id_psnt: 0.2755, G/loss_cd: 0.0354
+Elapsed [0:00:49], Iteration [170/100000], G/loss_id: 0.2551, G/loss_id_psnt: 0.2676, G/loss_cd: 0.0340
+Elapsed [0:00:53], Iteration [180/100000], G/loss_id: 0.2625, G/loss_id_psnt: 0.2744, G/loss_cd: 0.0300
+Elapsed [0:00:56], Iteration [190/100000], G/loss_id: 0.3166, G/loss_id_psnt: 0.2332, G/loss_cd: 0.0312
+Elapsed [0:00:59], Iteration [200/100000], G/loss_id: 0.2630, G/loss_id_psnt: 0.2650, G/loss_cd: 0.0297
+Elapsed [0:01:03], Iteration [210/100000], G/loss_id: 0.2865, G/loss_id_psnt: 0.2406, G/loss_cd: 0.0248
+Elapsed [0:01:06], Iteration [220/100000], G/loss_id: 0.2584, G/loss_id_psnt: 0.2700, G/loss_cd: 0.0263
+Elapsed [0:01:09], Iteration [230/100000], G/loss_id: 0.2243, G/loss_id_psnt: 0.3062, G/loss_cd: 0.0246
+Elapsed [0:01:12], Iteration [240/100000], G/loss_id: 0.2646, G/loss_id_psnt: 0.2581, G/loss_cd: 0.0259
+Elapsed [0:01:16], Iteration [250/100000], G/loss_id: 0.2543, G/loss_id_psnt: 0.2776, G/loss_cd: 0.0234
+Elapsed [0:01:19], Iteration [260/100000], G/loss_id: 0.2725, G/loss_id_psnt: 0.2468, G/loss_cd: 0.0241
+Elapsed [0:01:22], Iteration [270/100000], G/loss_id: 0.2418, G/loss_id_psnt: 0.2797, G/loss_cd: 0.0187
+Elapsed [0:01:26], Iteration [280/100000], G/loss_id: 0.2416, G/loss_id_psnt: 0.2759, G/loss_cd: 0.0220
+Elapsed [0:01:29], Iteration [290/100000], G/loss_id: 0.3033, G/loss_id_psnt: 0.2285, G/loss_cd: 0.0239
+Elapsed [0:01:32], Iteration [300/100000], G/loss_id: 0.2566, G/loss_id_psnt: 0.2612, G/loss_cd: 0.0207
+Elapsed [0:01:36], Iteration [310/100000], G/loss_id: 0.2239, G/loss_id_psnt: 0.2927, G/loss_cd: 0.0195
+Elapsed [0:01:39], Iteration [320/100000], G/loss_id: 0.2579, G/loss_id_psnt: 0.2566, G/loss_cd: 0.0191
+Elapsed [0:01:42], Iteration [330/100000], G/loss_id: 0.2380, G/loss_id_psnt: 0.2739, G/loss_cd: 0.0186
+Elapsed [0:01:45], Iteration [340/100000], G/loss_id: 0.2975, G/loss_id_psnt: 0.2305, G/loss_cd: 0.0155
+Elapsed [0:01:48], Iteration [350/100000], G/loss_id: 0.2446, G/loss_id_psnt: 0.2845, G/loss_cd: 0.0197
+Elapsed [0:01:50], Iteration [360/100000], G/loss_id: 0.2719, G/loss_id_psnt: 0.2472, G/loss_cd: 0.0121
+Elapsed [0:01:53], Iteration [370/100000], G/loss_id: 0.2070, G/loss_id_psnt: 0.3080, G/loss_cd: 0.0172
+Elapsed [0:01:56], Iteration [380/100000], G/loss_id: 0.2794, G/loss_id_psnt: 0.2426, G/loss_cd: 0.0143
+Elapsed [0:01:58], Iteration [390/100000], G/loss_id: 0.2686, G/loss_id_psnt: 0.2493, G/loss_cd: 0.0115
+Elapsed [0:02:01], Iteration [400/100000], G/loss_id: 0.3030, G/loss_id_psnt: 0.2134, G/loss_cd: 0.0137
+Elapsed [0:02:03], Iteration [410/100000], G/loss_id: 0.2364, G/loss_id_psnt: 0.2790, G/loss_cd: 0.0152
+Elapsed [0:02:07], Iteration [420/100000], G/loss_id: 0.2407, G/loss_id_psnt: 0.2647, G/loss_cd: 0.0177
+Elapsed [0:02:10], Iteration [430/100000], G/loss_id: 0.2566, G/loss_id_psnt: 0.2449, G/loss_cd: 0.0142
+Elapsed [0:02:13], Iteration [440/100000], G/loss_id: 0.1952, G/loss_id_psnt: 0.3304, G/loss_cd: 0.0157
+Elapsed [0:02:17], Iteration [450/100000], G/loss_id: 0.2422, G/loss_id_psnt: 0.2594, G/loss_cd: 0.0122
+Elapsed [0:02:20], Iteration [460/100000], G/loss_id: 0.2382, G/loss_id_psnt: 0.2649, G/loss_cd: 0.0150
+Elapsed [0:02:23], Iteration [470/100000], G/loss_id: 0.2394, G/loss_id_psnt: 0.2620, G/loss_cd: 0.0126
+Elapsed [0:02:26], Iteration [480/100000], G/loss_id: 0.2588, G/loss_id_psnt: 0.2376, G/loss_cd: 0.0130
+Elapsed [0:02:30], Iteration [490/100000], G/loss_id: 0.2282, G/loss_id_psnt: 0.2695, G/loss_cd: 0.0112
+Elapsed [0:02:33], Iteration [500/100000], G/loss_id: 0.2632, G/loss_id_psnt: 0.2431, G/loss_cd: 0.0130
+Elapsed [0:02:36], Iteration [510/100000], G/loss_id: 0.2477, G/loss_id_psnt: 0.2491, G/loss_cd: 0.0114
+Elapsed [0:02:40], Iteration [520/100000], G/loss_id: 0.2659, G/loss_id_psnt: 0.2405, G/loss_cd: 0.0096
+Elapsed [0:02:43], Iteration [530/100000], G/loss_id: 0.2716, G/loss_id_psnt: 0.2437, G/loss_cd: 0.0092
+Elapsed [0:02:46], Iteration [540/100000], G/loss_id: 0.2888, G/loss_id_psnt: 0.2109, G/loss_cd: 0.0076
+Elapsed [0:02:50], Iteration [550/100000], G/loss_id: 0.2345, G/loss_id_psnt: 0.2537, G/loss_cd: 0.0104
+Elapsed [0:02:53], Iteration [560/100000], G/loss_id: 0.2564, G/loss_id_psnt: 0.2475, G/loss_cd: 0.0102
+Elapsed [0:02:56], Iteration [570/100000], G/loss_id: 0.2209, G/loss_id_psnt: 0.2780, G/loss_cd: 0.0108
+Elapsed [0:02:59], Iteration [580/100000], G/loss_id: 0.2395, G/loss_id_psnt: 0.2496, G/loss_cd: 0.0106
+Elapsed [0:03:03], Iteration [590/100000], G/loss_id: 0.2399, G/loss_id_psnt: 0.2585, G/loss_cd: 0.0095
+Elapsed [0:03:06], Iteration [600/100000], G/loss_id: 0.2570, G/loss_id_psnt: 0.2443, G/loss_cd: 0.0089
+Elapsed [0:03:09], Iteration [610/100000], G/loss_id: 0.2378, G/loss_id_psnt: 0.2494, G/loss_cd: 0.0083
+Elapsed [0:03:11], Iteration [620/100000], G/loss_id: 0.2155, G/loss_id_psnt: 0.2746, G/loss_cd: 0.0114
+Elapsed [0:03:14], Iteration [630/100000], G/loss_id: 0.2649, G/loss_id_psnt: 0.2192, G/loss_cd: 0.0090
+Elapsed [0:03:17], Iteration [640/100000], G/loss_id: 0.2318, G/loss_id_psnt: 0.2577, G/loss_cd: 0.0076
+Elapsed [0:03:19], Iteration [650/100000], G/loss_id: 0.2460, G/loss_id_psnt: 0.2341, G/loss_cd: 0.0080
+Elapsed [0:03:22], Iteration [660/100000], G/loss_id: 0.2302, G/loss_id_psnt: 0.2499, G/loss_cd: 0.0086
+Elapsed [0:03:24], Iteration [670/100000], G/loss_id: 0.2125, G/loss_id_psnt: 0.2751, G/loss_cd: 0.0096
+Elapsed [0:03:28], Iteration [680/100000], G/loss_id: 0.2325, G/loss_id_psnt: 0.2540, G/loss_cd: 0.0076
+Elapsed [0:03:31], Iteration [690/100000], G/loss_id: 0.2278, G/loss_id_psnt: 0.2472, G/loss_cd: 0.0082
+Elapsed [0:03:34], Iteration [700/100000], G/loss_id: 0.2617, G/loss_id_psnt: 0.2188, G/loss_cd: 0.0084
+Elapsed [0:03:38], Iteration [710/100000], G/loss_id: 0.2170, G/loss_id_psnt: 0.2701, G/loss_cd: 0.0073
+Elapsed [0:03:41], Iteration [720/100000], G/loss_id: 0.2603, G/loss_id_psnt: 0.2161, G/loss_cd: 0.0066
+Elapsed [0:03:44], Iteration [730/100000], G/loss_id: 0.2173, G/loss_id_psnt: 0.2659, G/loss_cd: 0.0063
+Elapsed [0:03:47], Iteration [740/100000], G/loss_id: 0.2360, G/loss_id_psnt: 0.2449, G/loss_cd: 0.0055
+Elapsed [0:03:51], Iteration [750/100000], G/loss_id: 0.2161, G/loss_id_psnt: 0.2620, G/loss_cd: 0.0057
+Elapsed [0:03:54], Iteration [760/100000], G/loss_id: 0.2158, G/loss_id_psnt: 0.2609, G/loss_cd: 0.0077
+Elapsed [0:03:57], Iteration [770/100000], G/loss_id: 0.2297, G/loss_id_psnt: 0.2443, G/loss_cd: 0.0077
+Elapsed [0:04:01], Iteration [780/100000], G/loss_id: 0.2221, G/loss_id_psnt: 0.2702, G/loss_cd: 0.0054
+Elapsed [0:04:04], Iteration [790/100000], G/loss_id: 0.2501, G/loss_id_psnt: 0.2208, G/loss_cd: 0.0073
+Elapsed [0:04:07], Iteration [800/100000], G/loss_id: 0.2408, G/loss_id_psnt: 0.2328, G/loss_cd: 0.0047
+Elapsed [0:04:10], Iteration [810/100000], G/loss_id: 0.2418, G/loss_id_psnt: 0.2298, G/loss_cd: 0.0056
+Elapsed [0:04:14], Iteration [820/100000], G/loss_id: 0.2198, G/loss_id_psnt: 0.2528, G/loss_cd: 0.0059
+Elapsed [0:04:17], Iteration [830/100000], G/loss_id: 0.2249, G/loss_id_psnt: 0.2410, G/loss_cd: 0.0081
+Elapsed [0:04:20], Iteration [840/100000], G/loss_id: 0.2399, G/loss_id_psnt: 0.2230, G/loss_cd: 0.0077
+Elapsed [0:04:24], Iteration [850/100000], G/loss_id: 0.2162, G/loss_id_psnt: 0.2647, G/loss_cd: 0.0063
+Elapsed [0:04:27], Iteration [860/100000], G/loss_id: 0.2224, G/loss_id_psnt: 0.2521, G/loss_cd: 0.0053
+Elapsed [0:04:29], Iteration [870/100000], G/loss_id: 0.2211, G/loss_id_psnt: 0.2528, G/loss_cd: 0.0057
+Elapsed [0:04:32], Iteration [880/100000], G/loss_id: 0.2299, G/loss_id_psnt: 0.2469, G/loss_cd: 0.0091
+Elapsed [0:04:35], Iteration [890/100000], G/loss_id: 0.2403, G/loss_id_psnt: 0.2333, G/loss_cd: 0.0042
+Elapsed [0:04:38], Iteration [900/100000], G/loss_id: 0.2463, G/loss_id_psnt: 0.2185, G/loss_cd: 0.0054
+Elapsed [0:04:40], Iteration [910/100000], G/loss_id: 0.2047, G/loss_id_psnt: 0.2573, G/loss_cd: 0.0056
+Elapsed [0:04:43], Iteration [920/100000], G/loss_id: 0.2569, G/loss_id_psnt: 0.2043, G/loss_cd: 0.0061
+Elapsed [0:04:45], Iteration [930/100000], G/loss_id: 0.2237, G/loss_id_psnt: 0.2366, G/loss_cd: 0.0052
+Elapsed [0:04:48], Iteration [940/100000], G/loss_id: 0.2576, G/loss_id_psnt: 0.2201, G/loss_cd: 0.0037
+Elapsed [0:04:52], Iteration [950/100000], G/loss_id: 0.2438, G/loss_id_psnt: 0.2197, G/loss_cd: 0.0063
+Elapsed [0:04:55], Iteration [960/100000], G/loss_id: 0.2194, G/loss_id_psnt: 0.2304, G/loss_cd: 0.0070
+Elapsed [0:04:58], Iteration [970/100000], G/loss_id: 0.2243, G/loss_id_psnt: 0.2369, G/loss_cd: 0.0057
+Elapsed [0:05:01], Iteration [980/100000], G/loss_id: 0.2539, G/loss_id_psnt: 0.2025, G/loss_cd: 0.0058
+Elapsed [0:05:05], Iteration [990/100000], G/loss_id: 0.2224, G/loss_id_psnt: 0.2385, G/loss_cd: 0.0038
+Elapsed [0:05:08], Iteration [1000/100000], G/loss_id: 0.2509, G/loss_id_psnt: 0.2041, G/loss_cd: 0.0043
+Elapsed [0:05:27], Iteration [1010/100000], G/loss_id: 0.2288, G/loss_id_psnt: 0.2301, G/loss_cd: 0.0062
+Elapsed [0:05:44], Iteration [1020/100000], G/loss_id: 0.2369, G/loss_id_psnt: 0.2143, G/loss_cd: 0.0051
+Elapsed [0:05:54], Iteration [1030/100000], G/loss_id: 0.1948, G/loss_id_psnt: 0.2621, G/loss_cd: 0.0046
+Elapsed [0:06:04], Iteration [1040/100000], G/loss_id: 0.2330, G/loss_id_psnt: 0.2171, G/loss_cd: 0.0042
+Elapsed [0:06:23], Iteration [1050/100000], G/loss_id: 0.2085, G/loss_id_psnt: 0.2472, G/loss_cd: 0.0040
+Elapsed [0:06:42], Iteration [1060/100000], G/loss_id: 0.2166, G/loss_id_psnt: 0.2403, G/loss_cd: 0.0061
+Elapsed [0:06:57], Iteration [1070/100000], G/loss_id: 0.2479, G/loss_id_psnt: 0.2039, G/loss_cd: 0.0040
+Elapsed [0:07:07], Iteration [1080/100000], G/loss_id: 0.2148, G/loss_id_psnt: 0.2299, G/loss_cd: 0.0034
+Elapsed [0:07:21], Iteration [1090/100000], G/loss_id: 0.2205, G/loss_id_psnt: 0.2251, G/loss_cd: 0.0052
+Elapsed [0:07:39], Iteration [1100/100000], G/loss_id: 0.2155, G/loss_id_psnt: 0.2366, G/loss_cd: 0.0041
+Elapsed [0:07:58], Iteration [1110/100000], G/loss_id: 0.2234, G/loss_id_psnt: 0.2184, G/loss_cd: 0.0045
+Elapsed [0:08:10], Iteration [1120/100000], G/loss_id: 0.2076, G/loss_id_psnt: 0.2411, G/loss_cd: 0.0052
+Elapsed [0:08:20], Iteration [1130/100000], G/loss_id: 0.2351, G/loss_id_psnt: 0.2071, G/loss_cd: 0.0046
+Elapsed [0:08:37], Iteration [1140/100000], G/loss_id: 0.2260, G/loss_id_psnt: 0.2173, G/loss_cd: 0.0039
+Elapsed [0:08:56], Iteration [1150/100000], G/loss_id: 0.2096, G/loss_id_psnt: 0.2361, G/loss_cd: 0.0045
+Elapsed [0:09:15], Iteration [1160/100000], G/loss_id: 0.1977, G/loss_id_psnt: 0.2502, G/loss_cd: 0.0045
+Elapsed [0:09:25], Iteration [1170/100000], G/loss_id: 0.1880, G/loss_id_psnt: 0.2537, G/loss_cd: 0.0055
+Elapsed [0:09:36], Iteration [1180/100000], G/loss_id: 0.2144, G/loss_id_psnt: 0.2350, G/loss_cd: 0.0036
+Elapsed [0:09:55], Iteration [1190/100000], G/loss_id: 0.1988, G/loss_id_psnt: 0.2502, G/loss_cd: 0.0039
+Elapsed [0:10:14], Iteration [1200/100000], G/loss_id: 0.2045, G/loss_id_psnt: 0.2254, G/loss_cd: 0.0060
+Elapsed [0:10:29], Iteration [1210/100000], G/loss_id: 0.2140, G/loss_id_psnt: 0.2400, G/loss_cd: 0.0052
+Elapsed [0:10:39], Iteration [1220/100000], G/loss_id: 0.2300, G/loss_id_psnt: 0.2162, G/loss_cd: 0.0033
+Elapsed [0:10:53], Iteration [1230/100000], G/loss_id: 0.2424, G/loss_id_psnt: 0.2092, G/loss_cd: 0.0040
+Elapsed [0:11:12], Iteration [1240/100000], G/loss_id: 0.2208, G/loss_id_psnt: 0.2176, G/loss_cd: 0.0044
+Elapsed [0:11:31], Iteration [1250/100000], G/loss_id: 0.2018, G/loss_id_psnt: 0.2305, G/loss_cd: 0.0066
+Elapsed [0:11:43], Iteration [1260/100000], G/loss_id: 0.1994, G/loss_id_psnt: 0.2384, G/loss_cd: 0.0057
+Elapsed [0:11:53], Iteration [1270/100000], G/loss_id: 0.2113, G/loss_id_psnt: 0.2340, G/loss_cd: 0.0029
+Elapsed [0:12:10], Iteration [1280/100000], G/loss_id: 0.2230, G/loss_id_psnt: 0.2055, G/loss_cd: 0.0057
+Elapsed [0:12:29], Iteration [1290/100000], G/loss_id: 0.2291, G/loss_id_psnt: 0.2134, G/loss_cd: 0.0031
+Elapsed [0:12:48], Iteration [1300/100000], G/loss_id: 0.2053, G/loss_id_psnt: 0.2212, G/loss_cd: 0.0028
+Elapsed [0:12:58], Iteration [1310/100000], G/loss_id: 0.2282, G/loss_id_psnt: 0.2038, G/loss_cd: 0.0030
+Elapsed [0:13:08], Iteration [1320/100000], G/loss_id: 0.2012, G/loss_id_psnt: 0.2224, G/loss_cd: 0.0043
+Elapsed [0:13:27], Iteration [1330/100000], G/loss_id: 0.2433, G/loss_id_psnt: 0.1977, G/loss_cd: 0.0032
+Elapsed [0:13:46], Iteration [1340/100000], G/loss_id: 0.1916, G/loss_id_psnt: 0.2367, G/loss_cd: 0.0041
+Elapsed [0:14:02], Iteration [1350/100000], G/loss_id: 0.2208, G/loss_id_psnt: 0.2113, G/loss_cd: 0.0031
+Elapsed [0:14:12], Iteration [1360/100000], G/loss_id: 0.1884, G/loss_id_psnt: 0.2366, G/loss_cd: 0.0029
+Elapsed [0:14:25], Iteration [1370/100000], G/loss_id: 0.2216, G/loss_id_psnt: 0.2033, G/loss_cd: 0.0038
+Elapsed [0:14:44], Iteration [1380/100000], G/loss_id: 0.2126, G/loss_id_psnt: 0.2295, G/loss_cd: 0.0027
+Elapsed [0:15:03], Iteration [1390/100000], G/loss_id: 0.2241, G/loss_id_psnt: 0.2116, G/loss_cd: 0.0029
+Elapsed [0:15:16], Iteration [1400/100000], G/loss_id: 0.2035, G/loss_id_psnt: 0.2146, G/loss_cd: 0.0039
+Elapsed [0:15:26], Iteration [1410/100000], G/loss_id: 0.1942, G/loss_id_psnt: 0.2382, G/loss_cd: 0.0028
+Traceback (most recent call last):
+  File "/zhome/f6/e/127187/Desktop/autovc/main.py", line 46, in <module>
+    print(config)
+  File "/zhome/f6/e/127187/Desktop/autovc/main.py", line 20, in main
+    solver.train()
+  File "/zhome/f6/e/127187/Desktop/autovc/solver_encoder.py", line 137, in train
+    'epoch': i+1,
+  File "/zhome/f6/e/127187/.local/lib/python3.9/site-packages/torch/serialization.py", line 380, in save
+    return
+  File "/zhome/f6/e/127187/.local/lib/python3.9/site-packages/torch/serialization.py", line 214, in __exit__
+    self.file_like.close()
+KeyboardInterrupt

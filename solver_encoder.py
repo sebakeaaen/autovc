@@ -3,7 +3,9 @@ import torch
 import torch.nn.functional as F
 import time
 import datetime
+import wandb
 
+wandb.init(project="DNS autovc", entity="macaroni")
 
 class Solver(object):
 
@@ -19,6 +21,7 @@ class Solver(object):
         self.dim_emb = config.dim_emb
         self.dim_pre = config.dim_pre
         self.freq = config.freq
+        self.lr = config.lr
 
         # Training configurations.
         self.batch_size = config.batch_size
@@ -27,17 +30,26 @@ class Solver(object):
         # Miscellaneous.
         self.use_cuda = torch.cuda.is_available()
         self.device = torch.device('cuda:0' if self.use_cuda else 'cpu')
+        if self.device == "cuda:0":
+            print("Training on GPU.")
         self.log_step = config.log_step
 
         # Build the model and tensorboard.
         self.build_model()
+
+        # Set up weights and biases config
+        wandb.config = {
+            "learning_rate": self.lr,
+            "epochs": self.num_iters,
+            "batch_size": self.batch_size
+            }
 
             
     def build_model(self):
         
         self.G = Generator(self.dim_neck, self.dim_emb, self.dim_pre, self.freq)        
         
-        self.g_optimizer = torch.optim.Adam(self.G.parameters(), 0.0001)
+        self.g_optimizer = torch.optim.Adam(self.G.parameters(), self.lr)
         
         self.G.to(self.device)
         
@@ -107,13 +119,6 @@ class Solver(object):
             loss['G/loss_id_psnt'] = g_loss_id_psnt.item()
             loss['G/loss_cd'] = g_loss_cd.item()
 
-            # Save model checkpoint.
-            state = {
-                'epoch': i+1,
-                'state_dict': self.G.state_dict(),
-                }
-            torch.save(state, "model_checkpoint.pth")
-
             # =================================================================================== #
             #                                 4. Miscellaneous                                    #
             # =================================================================================== #
@@ -126,6 +131,21 @@ class Solver(object):
                 for tag in keys:
                     log += ", {}: {:.4f}".format(tag, loss[tag])
                 print(log)
+
+                # Save model checkpoint.
+                state = {
+                    'epoch': i+1,
+                    'state_dict': self.G.state_dict(),
+                }
+                torch.save(state, "model_checkpoint.pth")
+
+            # For weights and biases.
+            wandb.log({"epoch": i+1,
+                    "g_loss_id": g_loss_id.item(),
+                    "g_loss_id_psnt": g_loss_id_psnt.item(),
+                    "g_loss_cd": g_loss_cd.item()})
+
+            wandb.watch(self.G)
                 
 
     

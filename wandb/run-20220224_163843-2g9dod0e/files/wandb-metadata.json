@@ -1,0 +1,22 @@
+{
+    "os": "Linux-3.10.0-1160.53.1.el7.x86_64-x86_64-with-glibc2.17",
+    "python": "3.9.5",
+    "heartbeatAt": "2022-02-24T15:38:45.754620",
+    "startedAt": "2022-02-24T15:38:43.324468",
+    "docker": null,
+    "cpu_count": 20,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "/zhome/f6/e/127187/Desktop/autovc/main.py",
+    "codePath": "main.py",
+    "git": {
+        "remote": "https://github.com/sebakeaaen/autovc.git",
+        "commit": "3862dfb3fe9cd416ce5b6618530c31eabdf6ad97"
+    },
+    "email": "dgro@dtu.dk",
+    "root": "/zhome/f6/e/127187/Desktop/autovc",
+    "host": "gbarlogin2",
+    "username": "dgro",
+    "executable": "/zhome/f6/e/127187/miniconda3/bin/python3"
+}
