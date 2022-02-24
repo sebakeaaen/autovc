@@ -8,8 +8,10 @@ from collections import OrderedDict
 import numpy as np
 import torch
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 C = D_VECTOR(dim_input=80, dim_cell=768, dim_emb=256).eval().cuda()
-c_checkpoint = torch.load('3000000-BL.ckpt')
+c_checkpoint = torch.load('3000000-BL.ckpt', map_location = device)
 new_state_dict = OrderedDict()
 for key, val in c_checkpoint['model_b'].items():
     new_key = key[7:]
