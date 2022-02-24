@@ -19,7 +19,7 @@ def main(config):
 
     solver.train()
         
-    
+        
         
 
 if __name__ == '__main__':

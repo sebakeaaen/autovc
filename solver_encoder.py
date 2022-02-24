@@ -107,6 +107,13 @@ class Solver(object):
             loss['G/loss_id_psnt'] = g_loss_id_psnt.item()
             loss['G/loss_cd'] = g_loss_cd.item()
 
+            # Save model checkpoint.
+            state = {
+                'epoch': i+1,
+                'state_dict': self.G.state_dict(),
+                }
+            torch.save(state, "model_checkpoint.pth")
+
             # =================================================================================== #
             #                                 4. Miscellaneous                                    #
             # =================================================================================== #
