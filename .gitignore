@@ -132,3 +132,5 @@ dmypy.json
 wandb
 
 # model
+*.ckpt
+*.pth
