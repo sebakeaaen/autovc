@@ -1,6 +1,4 @@
-"""
-Generate speaker embeddings and metadata for training
-"""
+
 import os
 import pickle
 from model_bl import D_VECTOR
@@ -68,11 +66,18 @@ with open(os.path.join(rootDir, 'train.pkl'), 'wb') as handle:
 with open(r"spmel\train.pkl", "rb") as file:
     train = pickle.load(file)
 
+#train_cpy = train
+#for subject in train_cpy:
+#    for i, np_file in enumerate(subject[2:]):
+#        i=i+2
+#        subject[i] = np.load('spmel\\'+np_file)
+
 train_cpy = train
 for subject in train_cpy:
-    for i, np_file in enumerate(subject[2:]):
-        i=i+2
-        subject[i] = np.load('spmel\\'+np_file)
+    subject[3:] = [] # remove the npy don't need
+    for i in range(0,len(subject[2:])):
+        np_file = subject[2:][0] # 0 is the index of the chosen npy file
+        subject[2] = np.load('spmel/'+np_file)
         
 with open(os.path.join('.', 'metadata.pkl'), 'wb') as handle:
     pickle.dump(train_cpy, handle)
