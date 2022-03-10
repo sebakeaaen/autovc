@@ -64,3 +64,15 @@ for speaker in sorted(subdirList):
 with open(os.path.join(rootDir, 'train.pkl'), 'wb') as handle:
     pickle.dump(speakers, handle)
 
+# Our modification: Reading numpy files 
+with open(r"spmel\train.pkl", "rb") as file:
+    train = pickle.load(file)
+
+train_cpy = train
+for subject in train_cpy:
+    for i, np_file in enumerate(subject[2:]):
+        i=i+2
+        subject[i] = np.load('spmel\\'+np_file)
+        
+with open(os.path.join('.', 'metadata.pkl'), 'wb') as handle:
+    pickle.dump(train_cpy, handle)
