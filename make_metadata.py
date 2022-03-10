@@ -63,7 +63,7 @@ with open(os.path.join(rootDir, 'train.pkl'), 'wb') as handle:
     pickle.dump(speakers, handle)
 
 # Our modification: Reading numpy files 
-with open(r"spmel\train.pkl", "rb") as file:
+with open(r"spmel/train.pkl", "rb") as file:
     train = pickle.load(file)
 
 #train_cpy = train
