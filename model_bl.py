@@ -18,4 +18,3 @@ class D_VECTOR(nn.Module):
         norm = embeds.norm(p=2, dim=-1, keepdim=True) 
         embeds_normalized = embeds.div(norm)
         return embeds_normalized
-    

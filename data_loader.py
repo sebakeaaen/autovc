@@ -90,9 +90,3 @@ def get_loader(root_dir, batch_size=16, len_crop=128, num_workers=0):
                                   drop_last=True,
                                   worker_init_fn=worker_init_fn)
     return data_loader
-
-
-
-
-
-

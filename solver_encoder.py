@@ -44,12 +44,12 @@ class Solver(object):
             "batch_size": self.batch_size
             }
 
-            
+
     def build_model(self):
         
         self.G = Generator(self.dim_neck, self.dim_emb, self.dim_pre, self.freq)        
         
-        self.g_optimizer = torch.optim.Adam(self.G.parameters(), self.lr)
+        self.g_optimizer = torch.optim.Adam(self.G.parameters(), 0.0001)
         
         self.G.to(self.device)
         
@@ -138,8 +138,8 @@ class Solver(object):
                     'state_dict': self.G.state_dict(),
                 }
                 torch.save(state, "model_checkpoint.pth")
-
-            # For weights and biases.
+            
+             # For weights and biases.
             wandb.log({"epoch": i+1,
                     "g_loss_id": g_loss_id.item(),
                     "g_loss_id_psnt": g_loss_id_psnt.item(),

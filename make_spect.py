@@ -66,5 +66,4 @@ for subdir in sorted(subdirList):
         S = np.clip((D_db + 100) / 100, 0, 1)    
         # save spect    
         np.save(os.path.join(targetDir, subdir, fileName[:-4]),
-                S.astype(np.float32), allow_pickle=False)    
-        
+                S.astype(np.float32), allow_pickle=False)
