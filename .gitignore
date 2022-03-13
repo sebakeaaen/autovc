@@ -134,3 +134,9 @@ wandb
 # model
 *.ckpt
 *.pth
+
+# seb
+analysis.ipynb
+
+#wavs in root
+/*.wav
