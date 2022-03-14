@@ -5,6 +5,7 @@ import soundfile as sf
 from scipy import signal
 from scipy.signal import get_window
 from librosa.filters import mel
+import librosa
 from numpy.random import RandomState
 
 
@@ -37,9 +38,9 @@ b, a = butter_highpass(30, 16000, order=5)
 
 
 # audio file directory
-rootDir = './wavs'
+rootDir = '/work3/dgro/VCTK-Corpus-0/wav48_silence_trimmed'
 # spectrogram directory
-targetDir = './spmel'
+targetDir = '/work3/dgro/VCTK-Corpus-0/spmel'
 
 
 dirName, subdirList, _ = next(os.walk(rootDir))
@@ -56,7 +57,7 @@ for subdir in sorted(subdirList):
         x, fs = sf.read(os.path.join(dirName,subdir,fileName))
         # Remove drifting noise
         y = signal.filtfilt(b, a, x)
-        # Ddd a little random noise for model roubstness
+        # Add a little random noise for model roubstness
         wav = y * 0.96 + (prng.rand(y.shape[0])-0.5)*1e-06
         # Compute spect
         D = pySTFT(wav).T
@@ -66,4 +67,5 @@ for subdir in sorted(subdirList):
         S = np.clip((D_db + 100) / 100, 0, 1)    
         # save spect    
         np.save(os.path.join(targetDir, subdir, fileName[:-4]),
-                S.astype(np.float32), allow_pickle=False)
+                S.astype(np.float32), allow_pickle=False)    
+        

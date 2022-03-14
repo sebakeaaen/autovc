@@ -29,7 +29,7 @@ class Solver(object):
         
         # Miscellaneous.
         self.use_cuda = torch.cuda.is_available()
-        self.device = torch.device('cuda:0' if self.use_cuda else 'cpu')
+        self.device = torch.device("cuda:0" if self.use_cuda else 'cpu')
         if self.device == "cuda:0":
             print("Training on GPU.")
         else:
@@ -139,7 +139,7 @@ class Solver(object):
                     'epoch': i+1,
                     'state_dict': self.G.state_dict(),
                 }
-                torch.save(state, "model2_checkpoint.pth")
+                torch.save(state, "model_checkpoint.pth")
             
              # For weights and biases.
             wandb.log({"epoch": i+1,
@@ -147,7 +147,7 @@ class Solver(object):
                     "g_loss_id_psnt": g_loss_id_psnt.item(),
                     "g_loss_cd": g_loss_cd.item()})
 
-            wandb.watch(self.G, log_freq = 1000)
+            wandb.watch(self.G, log = 'parameters', log_freq = 1000)
                 
 
     
