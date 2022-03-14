@@ -33,10 +33,11 @@ if __name__ == '__main__':
     parser.add_argument('--freq', type=int, default=16)
     
     # Training configuration.
-    parser.add_argument('--data_dir', type=str, default='./spmel')
+    parser.add_argument('--data_dir', type=str, default='/work3/dgro/VCTK-Corpus-0/spmel')
     parser.add_argument('--batch_size', type=int, default=2, help='mini-batch size')
     parser.add_argument('--num_iters', type=int, default=1000000, help='number of total iterations')
     parser.add_argument('--len_crop', type=int, default=128, help='dataloader output sequence length')
+    parser.add_argument('--learning_rate', type=float, default=0.0001, help='learning rate for training')
     
     # Miscellaneous.
     parser.add_argument('--log_step', type=int, default=10)

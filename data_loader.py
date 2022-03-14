@@ -77,7 +77,7 @@ class Utterances(data.Dataset):
     
     
 
-def get_loader(root_dir, batch_size=16, len_crop=128, num_workers=0):
+def get_loader(root_dir, batch_size=16, len_crop=128, num_workers=2):
     """Build and return a data loader."""
     
     dataset = Utterances(root_dir, len_crop)

@@ -5,7 +5,7 @@ import time
 import datetime
 import wandb
 
-wandb.init(project="DNS autovc", entity="macaroni")
+wandb.init(project="DNS autovc", entity="macaroni", reinit=True)
 
 class Solver(object):
 
@@ -21,7 +21,7 @@ class Solver(object):
         self.dim_emb = config.dim_emb
         self.dim_pre = config.dim_pre
         self.freq = config.freq
-        self.lr = config.lr
+        self.lr = config.learning_rate
 
         # Training configurations.
         self.batch_size = config.batch_size
@@ -32,6 +32,8 @@ class Solver(object):
         self.device = torch.device('cuda:0' if self.use_cuda else 'cpu')
         if self.device == "cuda:0":
             print("Training on GPU.")
+        else:
+            print("Training on CPU.")
         self.log_step = config.log_step
 
         # Build the model and tensorboard.
@@ -49,7 +51,7 @@ class Solver(object):
         
         self.G = Generator(self.dim_neck, self.dim_emb, self.dim_pre, self.freq)        
         
-        self.g_optimizer = torch.optim.Adam(self.G.parameters(), 0.0001)
+        self.g_optimizer = torch.optim.Adam(self.G.parameters(), self.lr)
         
         self.G.to(self.device)
         
@@ -99,8 +101,8 @@ class Solver(object):
                         
             # Identity mapping loss
             x_identic, x_identic_psnt, code_real = self.G(x_real, emb_org, emb_org)
-            g_loss_id = F.mse_loss(x_real, x_identic)   
-            g_loss_id_psnt = F.mse_loss(x_real, x_identic_psnt)   
+            g_loss_id = F.mse_loss(x_real, x_identic.squeeze())   
+            g_loss_id_psnt = F.mse_loss(x_real, x_identic_psnt.squeeze())   
             
             # Code semantic loss.
             code_reconst = self.G(x_identic_psnt, emb_org, None)
@@ -137,7 +139,7 @@ class Solver(object):
                     'epoch': i+1,
                     'state_dict': self.G.state_dict(),
                 }
-                torch.save(state, "model_checkpoint.pth")
+                torch.save(state, "model2_checkpoint.pth")
             
              # For weights and biases.
             wandb.log({"epoch": i+1,
@@ -145,7 +147,7 @@ class Solver(object):
                     "g_loss_id_psnt": g_loss_id_psnt.item(),
                     "g_loss_cd": g_loss_cd.item()})
 
-            wandb.watch(self.G)
+            wandb.watch(self.G, log_freq = 1000)
                 
 
     
