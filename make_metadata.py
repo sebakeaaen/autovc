@@ -8,15 +8,20 @@ from collections import OrderedDict
 import numpy as np
 import torch
 
+pre_trained = True # OBS! change in conversion.ipynb, vocoder.ipynb and make_metadata.py
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 C = D_VECTOR(dim_input=80, dim_cell=768, dim_emb=256).eval().cuda()
-c_checkpoint = torch.load('3000000-BL.ckpt',map_location=device)
-new_state_dict = OrderedDict()
-for key, val in c_checkpoint['model_b'].items():
-    new_key = key[7:]
-    new_state_dict[new_key] = val
-C.load_state_dict(new_state_dict)
+
+if pre_trained == True:
+    c_checkpoint = torch.load('3000000-BL.ckpt',map_location=device)
+    new_state_dict = OrderedDict()
+    for key, val in c_checkpoint['model_b'].items():
+        new_key = key[7:]
+        new_state_dict[new_key] = val
+    C.load_state_dict(new_state_dict)
+
+
 num_uttrs = 10
 len_crop = 128
 
