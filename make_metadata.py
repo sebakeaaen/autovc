@@ -31,8 +31,8 @@ if pre_trained == True:
 num_uttrs = 10
 len_crop = 128
 
-# Directory containing mel-spectrograms
-rootDir = '/work3/dgro/VCTK-Corpus-0/spmel'
+# Directory containing spectrograms
+rootDir = '/work3/dgro/VCTK-Corpus-0/STFT'
 dirName, subdirList, _ = next(os.walk(rootDir))
 print('Found directory: %s' % dirName)
 

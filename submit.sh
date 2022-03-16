@@ -8,6 +8,8 @@
 #BSUB -n 2
 ### -- specify that the cores must be on the same host -- 
 #BSUB -R "span[hosts=1]"
+### -- For requesting a GPU with 32GB of memory, then please add a
+#BSUB -R "select[gpu16gb]"
 ### -- specify that we need 2GB of memory per core/slot -- 
 #BSUB -R "rusage[mem=16GB]"
 ### -- specify that we want the job to get killed if it exceeds 3 GB per core/slot -- 
@@ -20,7 +22,7 @@
 # if you want to receive e-mail notifications on a non-default address
 ##BSUB -u
 ### -- send notification at start -- 
-#BSUB -B 
+#BSUB -B
 ### -- send notification at completion -- 
 #BSUB -N 
 ### -- Specify the output and error file. %J is the job-id -- 
@@ -30,5 +32,10 @@
 
 # here follow the commands you want to execute 
 source ~/miniconda3/bin/activate
-conda activate base
+conda activate py39
+
+nvidia-smi
+# Load the cuda module
+module load cuda/10.2
+
 python main.py

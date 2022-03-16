@@ -28,9 +28,8 @@ class Solver(object):
         self.num_iters = config.num_iters
         
         # Miscellaneous.
-        self.use_cuda = torch.cuda.is_available()
-        self.device = torch.device("cuda:0" if self.use_cuda else 'cpu')
-        if self.device == "cuda:0":
+        self.device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
+        if self.device == "cuda":
             print("Training on GPU.")
         else:
             print("Training on CPU.")
@@ -89,14 +88,15 @@ class Solver(object):
                 x_real, emb_org = next(data_iter)
             
             
-            x_real = x_real.to(self.device) 
-            emb_org = emb_org.to(self.device) 
+            x_real = x_real.to(self.device)
+            emb_org = emb_org.to(self.device)
                         
        
             # =================================================================================== #
             #                               2. Train the generator                                #
             # =================================================================================== #
             
+            self.G.to(self.device)
             self.G = self.G.train()
                         
             # Identity mapping loss
@@ -139,7 +139,7 @@ class Solver(object):
                     'epoch': i+1,
                     'state_dict': self.G.state_dict(),
                 }
-                torch.save(state, "model_checkpoint.pth")
+                torch.save(state, "model_checkpoint_STFT.pth")
             
              # For weights and biases.
             wandb.log({"epoch": i+1,
@@ -147,7 +147,7 @@ class Solver(object):
                     "g_loss_id_psnt": g_loss_id_psnt.item(),
                     "g_loss_cd": g_loss_cd.item()})
 
-            wandb.watch(self.G, log = 'parameters', log_freq = 1000)
+            wandb.watch(self.G, log = None)
                 
 
     

@@ -16,7 +16,7 @@ def butter_highpass(cutoff, fs, order=5):
     return b, a
     
     
-def pySTFT(x, fft_length=1024, hop_length=256):
+def pySTFT(x, fft_length=int(1024*0.5), hop_length=256):
     
     x = np.pad(x, int(fft_length//2), mode='reflect')
     
@@ -40,8 +40,9 @@ b, a = butter_highpass(30, 16000, order=5)
 # audio file directory
 rootDir = '/work3/dgro/VCTK-Corpus-0/wav48_silence_trimmed'
 # spectrogram directory
-targetDir = '/work3/dgro/VCTK-Corpus-0/spmel'
-
+targetDir = '/work3/dgro/VCTK-Corpus-0/STFT'
+# specify if mic1 or mic2 should be used (mic2 is default)
+mic = 'mic1'
 
 dirName, subdirList, _ = next(os.walk(rootDir))
 print('Found directory: %s' % dirName)
@@ -53,19 +54,23 @@ for subdir in sorted(subdirList):
     _,_, fileList = next(os.walk(os.path.join(dirName,subdir)))
     prng = RandomState(int(subdir[1:])) 
     for fileName in sorted(fileList):
-        # Read audio file
-        x, fs = sf.read(os.path.join(dirName,subdir,fileName))
-        # Remove drifting noise
-        y = signal.filtfilt(b, a, x)
-        # Add a little random noise for model roubstness
-        wav = y * 0.96 + (prng.rand(y.shape[0])-0.5)*1e-06
-        # Compute spect
-        D = pySTFT(wav).T
-        # Convert to mel and normalize
-        D_mel = np.dot(D, mel_basis)
-        D_db = 20 * np.log10(np.maximum(min_level, D_mel)) - 16
-        S = np.clip((D_db + 100) / 100, 0, 1)    
-        # save spect    
-        np.save(os.path.join(targetDir, subdir, fileName[:-4]),
-                S.astype(np.float32), allow_pickle=False)    
-        
+        if (mic in fileName) == False: # only use the specified mic
+            # Read audio file
+            x, fs = sf.read(os.path.join(dirName,subdir,fileName))
+            # Remove drifting noise
+            y = signal.filtfilt(b, a, x)
+            # Add a little random noise for model roubstness
+            wav = y * 0.96 + (prng.rand(y.shape[0])-0.5)*1e-06
+            # Compute spect
+            D = pySTFT(wav).T
+            # normalize
+            D_db = 20 * np.log10(np.maximum(min_level, D)) - 16
+            D_norm =  np.clip((D_db + 100) / 100, 0, 1)
+            # Convert to mel and normalize
+            #D_mel = np.dot(D, mel_basis)
+            #D_db = 20 * np.log10(np.maximum(min_level, D_mel)) - 16
+            #S = np.clip((D_db + 100) / 100, 0, 1)    
+            # save spect    
+            np.save(os.path.join(targetDir, subdir, fileName[:-5]), # -5 if flac files, -4 if wav files
+                    D_norm.astype(np.float32), allow_pickle=False)    
+            
