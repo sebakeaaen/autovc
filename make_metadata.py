@@ -81,23 +81,16 @@ with open(os.path.join(rootDir, 'train.pkl'), 'wb') as handle:
 
 
 ######### Our modification: Reading numpy files ##########
-# with open(r"spmel/train.pkl", "rb") as file:
+# with open(os.path.join(rootDir, 'train.pkl'), 'wb') as file:
 #     train = pickle.load(file)
 
-# # multiple sentences (for training?)
-# #train_cpy = train
-# #for subject in train_cpy:
-# #    for i, np_file in enumerate(subject[2:]):
-# #        i=i+2
-# #        subject[i] = np.load('spmel/'+np_file)
-
-# # single sentence (for conversion)
-# train_cpy = train
-# for subject in train_cpy:
-#     subject[3:] = [] # remove the npy don't need
-#     for i in range(0,len(subject[2:])):
-#         np_file = subject[2:][0] # 0 is the index of the chosen npy file
-#         subject[2] = np.load('spmel/'+np_file)
+# #create metadata for testing
+# #Format is [subject, embedding, melspec] 
+# metadata = []
+# for subject in train:
+#     first_mel_spec = np.load('spmel/'+subject[2])
+#     metadata.append(subject[0:2] + [first_mel_spec])
         
 # with open(os.path.join('.', 'metadata.pkl'), 'wb') as handle:
-#     pickle.dump(train_cpy, handle)
+#     pickle.dump(metadata, handle)
+
