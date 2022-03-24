@@ -49,7 +49,8 @@ class Encoder(nn.Module):
         convolutions = []
         for i in range(3):
             conv_layer = nn.Sequential(
-                ConvNorm(80+dim_emb if i==0 and self.speaker_embed == True else 257+dim_emb if i==0 and self.speaker_embed == False else 512,
+                #ConvNorm(80+dim_emb if i==0 else 512, #for mel specs
+                ConvNorm(257+dim_emb if i==0 else 512, # for STFT
                          512,
                          kernel_size=5, stride=1,
                          padding=2,
@@ -103,10 +104,8 @@ class Decoder(nn.Module):
         
         self.lstm2 = nn.LSTM(dim_pre, 1024, 2, batch_first=True)
         
-        if self.speaker_embed:
-            self.linear_projection = LinearNorm(1024, 80) # for mel specs
-        else:
-            self.linear_projection = LinearNorm(1024, 257) # for STFTs
+        #self.linear_projection = LinearNorm(1024, 80) # for mel specs
+        self.linear_projection = LinearNorm(1024, 257) # for STFTs
 
     def forward(self, x):
         
@@ -122,7 +121,7 @@ class Decoder(nn.Module):
         
         decoder_output = self.linear_projection(outputs)
 
-        return decoder_output
+        return decoder_output   
     
     
 class Postnet(nn.Module):
