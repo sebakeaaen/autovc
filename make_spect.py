@@ -20,7 +20,7 @@ class Spect(object):
         self.cutoff = 30
         self.fs = 16000
         self.order = 5
-        self.fft_length = int(1024)
+        self.fft_length = 1024
         self.hop_length = 256
         self.n_fft = 1024
         self.n_mels = 128

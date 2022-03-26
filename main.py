@@ -27,8 +27,13 @@ def main(config):
     # Generate training metadata (if not allready done)
     #path = config.data_dir+'/'+config.model_type+'/metadata.pkl'
     #if len(os.listdir(path)) == 0: # check if path is empty
-    md = Metadata(config)
-    md.metadata()
+    path = config.data_dir + '/' + config.model_type + '/train.pkl'
+    if os.path.exists(path):
+        print("Metadata already created - continuing...")
+    else:
+        print('Metadata does not exists - creating...')
+        md = Metadata(config)
+        md.metadata()
 
     # Data loader.
     vcc_loader = get_loader(config.data_dir, config.batch_size, config.len_crop, config.model_type)
