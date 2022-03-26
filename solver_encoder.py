@@ -29,6 +29,7 @@ class Solver(object):
         
         # models
         self.model_type = config.model_type
+        self.speaker_embed = config.speaker_embed
 
         # Miscellaneous.
         self.device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
@@ -51,7 +52,7 @@ class Solver(object):
 
     def build_model(self):
         
-        self.G = Generator(self.dim_neck, self.dim_emb, self.dim_pre, self.freq)        
+        self.G = Generator(self.dim_neck, self.dim_emb, self.dim_pre, self.freq, self.speaker_embed)        
         
         self.g_optimizer = torch.optim.Adam(self.G.parameters(), self.lr)
         

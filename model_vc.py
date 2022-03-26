@@ -41,7 +41,7 @@ class ConvNorm(torch.nn.Module):
 class Encoder(nn.Module):
     """Encoder module:
     """
-    def __init__(self, dim_neck, dim_emb, freq):
+    def __init__(self, dim_neck, dim_emb, freq, speaker_embed):
         super(Encoder, self).__init__()
         self.dim_neck = dim_neck
         self.freq = freq
@@ -49,7 +49,7 @@ class Encoder(nn.Module):
         convolutions = []
         for i in range(3):
             conv_layer = nn.Sequential(
-                ConvNorm(80+dim_emb if i==0 and self.speaker_embed == True else 257+dim_emb if i==0 and self.speaker_embed == False else 512,
+                ConvNorm(80+dim_emb if i==0 and speaker_embed else 257+dim_emb if i==0 and speaker_embed == False else 512,
                          512,
                          kernel_size=5, stride=1,
                          padding=2,
@@ -84,7 +84,7 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     """Decoder module:
     """
-    def __init__(self, dim_neck, dim_emb, dim_pre):
+    def __init__(self, dim_neck, dim_emb, dim_pre, speaker_embed):
         super(Decoder, self).__init__()
         
         self.lstm1 = nn.LSTM(dim_neck*2+dim_emb, dim_pre, 1, batch_first=True)
@@ -103,7 +103,7 @@ class Decoder(nn.Module):
         
         self.lstm2 = nn.LSTM(dim_pre, 1024, 2, batch_first=True)
         
-        self.linear_projection = LinearNorm(1024, 80 if self.speaker_embed == True else 257) # for mel specs
+        self.linear_projection = LinearNorm(1024, 80 if speaker_embed else 257) # for mel specs
 
     def forward(self, x):
         
@@ -127,13 +127,13 @@ class Postnet(nn.Module):
         - Five 1-d convolution with 512 channels and kernel size 5
     """
 
-    def __init__(self):
+    def __init__(self, speaker_embed):
         super(Postnet, self).__init__()
         self.convolutions = nn.ModuleList()
 
         self.convolutions.append(
             nn.Sequential(
-                ConvNorm(80 if self.speaker_embed == True else 257, 512,
+                ConvNorm(80 if speaker_embed else 257, 512,
                          kernel_size=5, stride=1,
                          padding=2,
                          dilation=1, w_init_gain='tanh'),
@@ -153,11 +153,11 @@ class Postnet(nn.Module):
 
         self.convolutions.append(
             nn.Sequential(
-                ConvNorm(512, 80 if self.speaker_embed == True else 257,
+                ConvNorm(512, 80 if speaker_embed else 257,
                          kernel_size=5, stride=1,
                          padding=2,
                          dilation=1, w_init_gain='linear'),
-                nn.BatchNorm1d(80 if self.speaker_embed == True else 257))
+                nn.BatchNorm1d(80 if speaker_embed else 257))
             )
 
     def forward(self, x):
@@ -171,12 +171,12 @@ class Postnet(nn.Module):
 
 class Generator(nn.Module):
     """Generator network."""
-    def __init__(self, dim_neck, dim_emb, dim_pre, freq):
+    def __init__(self, dim_neck, dim_emb, dim_pre, freq, speaker_embed):
         super(Generator, self).__init__()
         
-        self.encoder = Encoder(dim_neck, dim_emb, freq)
-        self.decoder = Decoder(dim_neck, dim_emb, dim_pre)
-        self.postnet = Postnet()
+        self.encoder = Encoder(dim_neck, dim_emb, freq, speaker_embed)
+        self.decoder = Decoder(dim_neck, dim_emb, dim_pre, speaker_embed)
+        self.postnet = Postnet(speaker_embed)
 
     def forward(self, x, c_org, c_trg):
                 

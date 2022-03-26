@@ -18,7 +18,7 @@ class Utterances(data.Dataset):
 
         self.root_dir = root_dir + '/' + model_type
         
-        with open(os.path.join(self.root_dir, 'train.pkl'), 'wb') as file:
+        with open(os.path.join(self.root_dir, 'train.pkl'), 'rb') as file:
             meta = pickle.load(file)
         
         """Load data using multiprocessing"""

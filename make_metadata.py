@@ -58,7 +58,7 @@ class Metadata(object):
                         tmp = np.load(os.path.join(dirName, speaker, fileList[idx_alt]))
                         candidates = np.delete(candidates, np.argwhere(candidates==idx_alt))
                     left = np.random.randint(0, tmp.shape[0]-len_crop)
-                    melsp = torch.from_numpy(tmp[np.newaxis, left:left+len_crop, :]).cuda()
+                    melsp = torch.from_numpy(tmp[np.newaxis, left:left+len_crop, :]).to(device)
                     emb = C(melsp)
                     embs.append(emb.detach().squeeze().cpu().numpy())     
                 utterances.append(np.mean(embs, axis=0))
@@ -77,14 +77,14 @@ class Metadata(object):
 
         ######### Our modification: Reading numpy files in speaker embedding ##########
         if self.speaker_embed:
-            with open(os.path.join(self.rootDir, 'train.pkl'), 'wb') as file:
+            with open(os.path.join(self.rootDir, 'train.pkl'), 'rb') as file:
                 train = pickle.load(file)
 
             #create metadata for testing
             #Format is [subject, embedding, melspec] 
             metadata = []
             for subject in train:
-                first_mel_spec = np.load('spmel/'+subject[2])
+                first_mel_spec = np.load(self.rootDir+'/'+subject[2])
                 metadata.append(subject[0:2] + [first_mel_spec])
         
             #with open(os.path.join('.', 'metadata.pkl'), 'wb') as handle:
