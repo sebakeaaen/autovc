@@ -16,17 +16,22 @@ def main(config):
     cudnn.benchmark = True
 
     # Generate spectrogram data from the wav files (if not already done)
-    if glob.glob(config.data_dir+config.speaker_embed+'p*'): # check if path is empty
+    #path = config.data_dir + '/' + config.model_type # check if path is empty
+    if  os.path.exists(os.path.join(config.data_dir, config.model_type)) == False:
+        print('Did not find folder with spectrograms - creating...')
         sp = Spect(config)
         sp.spect()
+    else:
+        print('Found folder with spectrograms - continuing...')
 
     # Generate training metadata (if not allready done)
-    if glob.glob(config.data_dir+config.speaker_embed+'/metadata.pkl'): # check if path is empty
-        md = Metadata(config)
-        md.metadata()
+    #path = config.data_dir+'/'+config.model_type+'/metadata.pkl'
+    #if len(os.listdir(path)) == 0: # check if path is empty
+    md = Metadata(config)
+    md.metadata()
 
     # Data loader.
-    vcc_loader = get_loader(config.data_dir, config.batch_size, config.len_crop)
+    vcc_loader = get_loader(config.data_dir, config.batch_size, config.len_crop, config.model_type)
     
     solver = Solver(vcc_loader, config)
 
@@ -40,7 +45,7 @@ if __name__ == '__main__':
     # Model configuration.
     parser.add_argument('--lambda_cd', type=float, default=1, help='weight for hidden code loss')
     parser.add_argument('--dim_neck', type=int, default=16)
-    parser.add_argument('--dim_emb', type=int, default=111) # if one-hot encoding, change to no. of subjects
+    parser.add_argument('--dim_emb', type=int, default=256) # if one-hot encoding, change to no. of subjects
                                                             # 110 subjects in total
     parser.add_argument('--dim_pre', type=int, default=512)
     parser.add_argument('--freq', type=int, default=16)

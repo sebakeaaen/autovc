@@ -14,13 +14,13 @@ class Metadata(object):
         """Initialize configurations."""
 
         self.speaker_embed = config.speaker_embed
-        self.rootDir = config.data_dir+config.speaker_embed # Directory containing spectrograms
+        self.rootDir = config.data_dir+'/'+config.model_type # Directory containing spectrograms
     
     def metadata(self):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        C = D_VECTOR(dim_input=80, dim_cell=768, dim_emb=256).eval().to(device)
         
         if self.speaker_embed:
+            C = D_VECTOR(dim_input=80, dim_cell=768, dim_emb=256).eval().to(device)
             c_checkpoint = torch.load('3000000-BL.ckpt',map_location=device)
             new_state_dict = OrderedDict()
             for key, val in c_checkpoint['model_b'].items():

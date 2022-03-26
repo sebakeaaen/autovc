@@ -27,6 +27,9 @@ class Solver(object):
         self.batch_size = config.batch_size
         self.num_iters = config.num_iters
         
+        # models
+        self.model_type = config.model_type
+
         # Miscellaneous.
         self.device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
         if self.device == "cuda":
@@ -139,7 +142,8 @@ class Solver(object):
                     'epoch': i+1,
                     'state_dict': self.G.state_dict(),
                 }
-                torch.save(state, "model_checkpoint_STFT.pth")
+                save_name = 'model_checkpoint_'+self.model_type+'.ckpt'
+                torch.save(state, save_name)
             
              # For weights and biases.
             wandb.log({"epoch": i+1,

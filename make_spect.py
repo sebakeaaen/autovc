@@ -15,11 +15,12 @@ class Spect(object):
         """Initialize configurations."""
 
         self.speaker_embed = config.speaker_embed
-        self.targetDir = config.data_dir+config.speaker_embed # Directory containing spectrograms
+        self.model_type = config.model_type
+        self.targetDir = config.data_dir # Directory containing spectrograms
         self.cutoff = 30
         self.fs = 16000
         self.order = 5
-        self.fft_length = int(1024*0.5)
+        self.fft_length = int(1024)
         self.hop_length = 256
         self.n_fft = 1024
         self.n_mels = 128
@@ -29,6 +30,7 @@ class Spect(object):
         nyq = 0.5 * self.fs
         normal_cutoff = self.cutoff / nyq
         b, a = signal.butter(self.order, normal_cutoff, btype='high', analog=False)
+        return b, a
     
     def pySTFT(self, x):
     
@@ -42,14 +44,16 @@ class Spect(object):
     
         fft_window = get_window('hann', self.fft_length, fftbins=True)
         result = np.abs(np.fft.rfft(fft_window * result, n=self.fft_length).T) # inverse function is irfft 
+        return result
     
     def spect(self):
         mel_basis = mel(self.fs, self.n_fft, fmin=90, fmax=7600, n_mels=80).T
         min_level = np.exp(-100 / 20 * np.log(10))
-        b, a = self.butter_highpass(self.cutoff, self.fs, self.order)
+        b, a = self.butter_highpass()
         
         # audio file directory
         rootDir = self.targetDir+'/wav48_silence_trimmed'
+        saveDir = self.targetDir + '/' + self.model_type
         # specify if mic1 or mic2 should be used (mic2 is default)
         mic = 'mic1'
 
@@ -58,8 +62,8 @@ class Spect(object):
 
         for subdir in sorted(subdirList):
         #print(subdir)
-            if not os.path.exists(os.path.join(self.targetDir, subdir)):
-                os.makedirs(os.path.join(self.targetDir, subdir))
+            if not os.path.exists(os.path.join(saveDir, subdir)):
+                os.makedirs(os.path.join(saveDir, subdir))
             _,_, fileList = next(os.walk(os.path.join(dirName,subdir)))
             prng = RandomState(int(subdir[1:])) 
             for fileName in sorted(fileList):
@@ -80,5 +84,5 @@ class Spect(object):
                     else: # save stft
                         S = D
                     # save spect
-                    np.save(os.path.join(self.targetDir, subdir, fileName[:-5]), # -5 if flac files, -4 if wav files
+                    np.save(os.path.join(saveDir, subdir, fileName[:-5]), # -5 if flac files, -4 if wav files
                         S.astype(np.float32), allow_pickle=False)

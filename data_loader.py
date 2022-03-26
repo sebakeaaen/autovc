@@ -10,14 +10,16 @@ from multiprocessing import Process, Manager
 class Utterances(data.Dataset):
     """Dataset class for the Utterances dataset."""
 
-    def __init__(self, root_dir, len_crop):
+    def __init__(self, root_dir, len_crop, model_type):
         """Initialize and preprocess the Utterances dataset."""
-        self.root_dir = root_dir
+        #self.root_dir = root_dir
         self.len_crop = len_crop
         self.step = 10
+
+        self.root_dir = root_dir + '/' + model_type
         
-        metaname = os.path.join(self.root_dir, "train.pkl")
-        meta = pickle.load(open(metaname, "rb"))
+        with open(os.path.join(self.root_dir, 'train.pkl'), 'wb') as file:
+            meta = pickle.load(file)
         
         """Load data using multiprocessing"""
         manager = Manager()
@@ -77,10 +79,10 @@ class Utterances(data.Dataset):
     
     
 
-def get_loader(root_dir, batch_size=16, len_crop=128, num_workers=2):
+def get_loader(root_dir, batch_size=16, len_crop=128, model_type = 'spmel', num_workers=2):
     """Build and return a data loader."""
     
-    dataset = Utterances(root_dir, len_crop)
+    dataset = Utterances(root_dir, len_crop, model_type)
     
     worker_init_fn = lambda x: np.random.seed((torch.initial_seed()) % (2**32))
     data_loader = data.DataLoader(dataset=dataset,

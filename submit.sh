@@ -3,7 +3,7 @@
 ### -- specify queue -- 
 #BSUB -q gpuv100
 ### -- set the job Name -- 
-#BSUB -J AutoVC_train_dgro
+#BSUB -J AutoVC
 ### -- ask for number of cores (default: 1) -- 
 #BSUB -n 2
 ### -- specify that the cores must be on the same host -- 
