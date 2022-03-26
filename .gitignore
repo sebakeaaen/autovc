@@ -140,7 +140,7 @@ analysis.ipynb
 
 #wavs in root
 /*.wav
-*.wav
+
 
 # HPC logs
 *.err
