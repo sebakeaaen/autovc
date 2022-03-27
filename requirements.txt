@@ -2,9 +2,9 @@ librosa==0.9.1
 numpy==1.22.3
 scipy==1.8.0
 soundfile==0.10.3.post1
-torch==1.8.1+cu101
 tqdm==4.63.1
 wandb==0.12.11
 wavenet_vocoder==0.1.1
-torchvision==0.9.1+cu101
 torchaudio==0.8.1
+torch==1.8.1+cu101 -f https://download.pytorch.org/whl/torch_stable.html
+torchvision==0.9.1+cu101 -f https://download.pytorch.org/whl/torch_stable.html
