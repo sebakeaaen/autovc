@@ -5,13 +5,6 @@ import time
 import datetime
 import wandb
 
-with open('wandb.token', 'r') as file:
-    api_key = file.readline()
-    wandb.login(key=api_key)
-
-wandb.init(project="DNS autovc", entity="macaroni", reinit=True)
-
-
 
 class Solver(object):
 
@@ -28,6 +21,7 @@ class Solver(object):
         self.dim_pre = config.dim_pre
         self.freq = config.freq
         self.lr = config.learning_rate
+        self.run_name = config.run_name
 
         # Training configurations.
         self.batch_size = config.batch_size
@@ -37,12 +31,23 @@ class Solver(object):
         self.model_type = config.model_type
         self.speaker_embed = config.speaker_embed
 
+        #wandb setup
+        with open('wandb.token', 'r') as file:
+            api_key = file.readline()
+            wandb.login(key=api_key)
+
+        wandb.init(project="DNS autovc", entity="macaroni", reinit=True, name=self.run_name)
+
         # Miscellaneous.
-        self.device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
-        if self.device == "cuda":
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        if self.device.type == 'cuda':
             print("Training on GPU.")
         else:
             print("Training on CPU.")
+            wandb.alert(
+                            title=f"Training on {self.device}", 
+                            text=f"Training on {self.device}"
+                        )
         self.log_step = config.log_step
 
         # Build the model and tensorboard.
@@ -149,7 +154,7 @@ class Solver(object):
                     'epoch': i+1,
                     'state_dict': self.G.state_dict(),
                 }
-                save_name = 'model_checkpoint_'+self.model_type+'.ckpt'
+                save_name = 'model_checkpoint_'+self.model_type + ' ' + self.run_name+'.ckpt'
                 torch.save(state, save_name)
             
              # For weights and biases.
