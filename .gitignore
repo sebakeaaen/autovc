@@ -146,4 +146,7 @@ analysis.ipynb
 *.err
 *.out
 
+#secrets
+*.token
+
 STFT_test.ipynb
