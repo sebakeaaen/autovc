@@ -5,7 +5,13 @@ import time
 import datetime
 import wandb
 
+with open('wandb.token', 'r') as file:
+    api_key = file.readline()
+    wandb.login(key=api_key)
+
 wandb.init(project="DNS autovc", entity="macaroni", reinit=True)
+
+
 
 class Solver(object):
 
