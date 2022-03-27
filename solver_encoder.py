@@ -154,7 +154,7 @@ class Solver(object):
                     'epoch': i+1,
                     'state_dict': self.G.state_dict(),
                 }
-                save_name = 'model_checkpoint_'+self.model_type + ' ' + self.run_name+'.ckpt'
+                save_name = 'chkpnt_'+self.model_type + '_' + self.run_name+ '.ckpt'
                 torch.save(state, save_name)
             
              # For weights and biases.

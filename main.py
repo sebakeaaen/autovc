@@ -5,7 +5,7 @@ from data_loader import get_loader
 from torch.backends import cudnn
 from make_metadata import Metadata
 from make_spect import Spect
-import glob
+from datetime import datetime
 
 
 def str2bool(v):
@@ -69,5 +69,6 @@ if __name__ == '__main__':
     parser.add_argument('--log_step', type=int, default=10)
 
     config = parser.parse_args()
+    config.run_name = config.run_name + datetime.now().strftime('_%y%B%d_%H%M_%S')
     print(config)
     main(config)
