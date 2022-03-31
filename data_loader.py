@@ -2,7 +2,8 @@ from torch.utils import data
 import torch
 import numpy as np
 import pickle 
-import os    
+import os
+import torch.nn.functional as F 
        
 from multiprocessing import Process, Manager   
 
@@ -35,6 +36,12 @@ class Utterances(data.Dataset):
             p.join()
             
         self.train_dataset = list(dataset)
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        for i in range(len(self.train_dataset)):
+            for j in range(len(self.train_dataset[i])):
+                if j > 0:
+                    self.train_dataset[i][j] = torch.from_numpy(self.train_dataset[i][j]).to(self.device)
+                    
         self.num_tokens = len(self.train_dataset)
         
         print('Finished loading the dataset...')
@@ -59,9 +66,10 @@ class Utterances(data.Dataset):
         
         # pick random uttr with random crop
         a = np.random.randint(2, len(list_uttrs))
-        tmp = list_uttrs[a]
+        tmp = list_uttrs[a].to(self.device)
         if tmp.shape[0] < self.len_crop:
             len_pad = self.len_crop - tmp.shape[0]
+            #uttr = np.pad(tmp, ((0,len_pad),(0,0)), 'constant') # change to torch padding
             uttr = np.pad(tmp, ((0,len_pad),(0,0)), 'constant')
         elif tmp.shape[0] > self.len_crop:
             left = np.random.randint(tmp.shape[0]-self.len_crop)
@@ -79,7 +87,7 @@ class Utterances(data.Dataset):
     
     
 
-def get_loader(root_dir, batch_size=16, len_crop=128, model_type = 'spmel', num_workers=2):
+def get_loader(root_dir, batch_size=16, len_crop=128, model_type = 'spmel', num_workers=0):
     """Build and return a data loader."""
     
     dataset = Utterances(root_dir, len_crop, model_type)

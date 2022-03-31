@@ -16,7 +16,6 @@ def main(config):
     cudnn.benchmark = True
 
     # Generate spectrogram data from the wav files (if not already done)
-    #path = config.data_dir + '/' + config.model_type # check if path is empty
     if  os.path.exists(os.path.join(config.data_dir, config.model_type)) == False:
         print('Did not find folder with spectrograms - creating...')
         sp = Spect(config)
@@ -25,8 +24,6 @@ def main(config):
         print('Found folder with spectrograms - continuing...')
 
     # Generate training metadata (if not allready done)
-    #path = config.data_dir+'/'+config.model_type+'/metadata.pkl'
-    #if len(os.listdir(path)) == 0: # check if path is empty
     path = config.data_dir + '/' + config.model_type + '/train.pkl'
     if os.path.exists(path):
         print("Metadata already created - continuing...")
@@ -53,20 +50,20 @@ if __name__ == '__main__':
     parser.add_argument('--dim_emb', type=int, default=256) # if one-hot encoding, change to no. of subjects
                                                             # 110 subjects in total
     parser.add_argument('--dim_pre', type=int, default=512)
-    parser.add_argument('--freq', type=int, default=16)
+    parser.add_argument('--freq', type=int, default=32)
     
     # Training configuration.
     parser.add_argument('--data_dir', type=str, default='/work3/dgro/VCTK-Corpus-0') # consider if train should be on all or only subset
     parser.add_argument('--batch_size', type=int, default=2, help='mini-batch size')
     parser.add_argument('--num_iters', type=int, default=10000000, help='number of total iterations')
     parser.add_argument('--len_crop', type=int, default=128, help='dataloader output sequence length')
-    parser.add_argument('--learning_rate', type=float, default=0.0001, help='learning rate for training')
+    parser.add_argument('--learning_rate', type=float, default=0.000001, help='learning rate for training')
     parser.add_argument('--speaker_embed',type=bool, default=True, help='mel-based speaker embedding or one-hot-encoding')
     parser.add_argument('--model_type',type=str,default='spmel',help='input/output type: spmel or stft')
     parser.add_argument('--run_name',required=True, type=str, help='name of run for wan_db and checkpoints')
 
     # Miscellaneous.
-    parser.add_argument('--log_step', type=int, default=10)
+    parser.add_argument('--log_step', type=int, default=100)
 
     config = parser.parse_args()
     config.run_name = config.run_name + datetime.now().strftime('_%y%B%d_%H%M_%S')

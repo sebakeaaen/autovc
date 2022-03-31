@@ -31,6 +31,8 @@ class Solver(object):
         self.model_type = config.model_type
         self.speaker_embed = config.speaker_embed
 
+        self.config = config
+
         #wandb setup
         with open('wandb.token', 'r') as file:
             api_key = file.readline()
@@ -54,11 +56,7 @@ class Solver(object):
         self.build_model()
 
         # Set up weights and biases config
-        wandb.config = {
-            "learning_rate": self.lr,
-            "epochs": self.num_iters,
-            "batch_size": self.batch_size
-            }
+        wandb.config.update(config)
 
 
     def build_model(self):

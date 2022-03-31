@@ -38,4 +38,4 @@ nvidia-smi
 # Load the cuda module
 module load cuda/10.2
 
-python main.py
+python main.py --run_name ditte_test --learning_rate 0.00000001
