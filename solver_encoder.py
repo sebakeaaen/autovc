@@ -21,6 +21,7 @@ class Solver(object):
         self.dim_pre = config.dim_pre
         self.freq = config.freq
         self.lr = config.learning_rate
+        self.lr_scheduler = config.learning_rate
         self.run_name = config.run_name
 
         # Training configurations.
@@ -66,7 +67,15 @@ class Solver(object):
         self.G = Generator(self.dim_neck, self.dim_emb, self.dim_pre, self.freq, self.speaker_embed)        
         
         self.g_optimizer = torch.optim.Adam(self.G.parameters(), self.lr)
-        
+
+        if self.lr_scheduler == 'Cosine': 
+            self.lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.g_optimizer, T_max=10, eta_min=0)
+        elif self.lr_scheduler == 'Plateau':
+            self.lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.g_optimizer, 'min')
+        else:
+            print('No learning rate scheduler used')
+            self.lr_scheduler = None
+            
         self.G.to(self.device)
         
 
@@ -157,6 +166,10 @@ class Solver(object):
                 save_name = 'chkpnt_'+self.model_type + '_' + self.run_name+ '.ckpt'
                 torch.save(state, save_name)
             
+            if self.lr_scheduler is not None:
+                self.lr_scheduler.step()
+                print(f'The current learning rate: {self.lr_scheduler.get_last_lr()[0]}')
+
              # For weights and biases.
             wandb.log({"epoch": i+1,
                     "g_loss_id": g_loss_id.item(),

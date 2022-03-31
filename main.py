@@ -53,7 +53,7 @@ if __name__ == '__main__':
     parser.add_argument('--dim_emb', type=int, default=256) # if one-hot encoding, change to no. of subjects
                                                             # 110 subjects in total
     parser.add_argument('--dim_pre', type=int, default=512)
-    parser.add_argument('--freq', type=int, default=16)
+    parser.add_argument('--freq', type=int, default=32)
     
     # Training configuration.
     parser.add_argument('--data_dir', type=str, default='/work3/dgro/VCTK-Corpus-0') # consider if train should be on all or only subset
@@ -64,6 +64,7 @@ if __name__ == '__main__':
     parser.add_argument('--speaker_embed',type=bool, default=True, help='mel-based speaker embedding or one-hot-encoding')
     parser.add_argument('--model_type',type=str,default='spmel',help='input/output type: spmel or stft')
     parser.add_argument('--run_name',required=True, type=str, help='name of run for wan_db and checkpoints')
+    parser.add_argument('--lr_scheduler',type=str,default='Cosine',help='Cosine or Plateau')
 
     # Miscellaneous.
     parser.add_argument('--log_step', type=int, default=10)

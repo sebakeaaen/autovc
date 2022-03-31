@@ -38,4 +38,4 @@ nvidia-smi
 # Load the cuda module
 module load cuda/10.2
 
-python main.py
+python main.py --run_name 'spmel_cosine'
