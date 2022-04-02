@@ -21,7 +21,7 @@ class Solver(object):
         self.dim_pre = config.dim_pre
         self.freq = config.freq
         self.lr = config.learning_rate
-        self.lr_scheduler = config.learning_rate
+        self.lr_scheduler = config.lr_scheduler
         self.run_name = config.run_name
 
         # Training configurations.
@@ -137,6 +137,15 @@ class Solver(object):
             g_loss.backward()
             self.g_optimizer.step()
 
+            # Learning rate scheduler step
+            if self.lr_scheduler is not None:
+                if self.lr_scheduler == 'Cosine': 
+                    self.lr_scheduler.step()
+                    print('The current learning rate:', self.lr_scheduler.get_last_lr()[0])
+                else: # Plateau
+                    self.lr_scheduler.step(g_loss) # the loss should be validation loss not training loss..
+                    print('The current learning rate:', self.lr_scheduler.optimizer.param_groups[0]['lr'])
+
             # Logging.
             loss = {}
             loss['G/loss_id'] = g_loss_id.item()
@@ -164,12 +173,9 @@ class Solver(object):
                 save_name = 'chkpnt_'+self.model_type + '_' + self.run_name+ '.ckpt'
                 torch.save(state, save_name)
             
-            if self.lr_scheduler is not None:
-                self.lr_scheduler.step()
-                print(f'The current learning rate: {self.lr_scheduler.get_last_lr()[0]}')
-
              # For weights and biases.
             wandb.log({"epoch": i+1,
+                    "lr": self.lr_scheduler.get_last_lr()[0],
                     "g_loss_id": g_loss_id.item(),
                     "g_loss_id_psnt": g_loss_id_psnt.item(),
                     "g_loss_cd": g_loss_cd.item()})
