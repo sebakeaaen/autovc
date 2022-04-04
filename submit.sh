@@ -38,4 +38,4 @@ nvidia-smi
 # Load the cuda module
 module load cuda/10.2
 
-python main.py --run_name spmel_plateau --learning_rate 0.0001
+python main.py --run_name spmel_cosine --learning_rate 0.1

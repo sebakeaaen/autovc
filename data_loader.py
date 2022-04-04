@@ -25,7 +25,7 @@ class Utterances(data.Dataset):
         """Load data using multiprocessing"""
         manager = Manager()
         meta = manager.list(meta)
-        dataset = manager.list(len(meta)*[None])  
+        dataset = manager.list(len(meta)*[None])
         processes = []
         for i in range(0, len(meta), self.step):
             p = Process(target=self.load_data, 

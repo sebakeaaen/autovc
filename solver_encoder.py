@@ -141,10 +141,12 @@ class Solver(object):
             if self.lr_scheduler is not None:
                 if self.lr_scheduler == 'Cosine': 
                     self.lr_scheduler.step()
-                    print('The current learning rate:', self.lr_scheduler.get_last_lr()[0])
+                    lr = self.lr_scheduler.get_last_lr()[0]
+                    print('The current learning rate:', lr)
                 else: # Plateau
                     self.lr_scheduler.step(g_loss) # the loss should be validation loss not training loss..
-                    print('The current learning rate:', self.lr_scheduler.optimizer.param_groups[0]['lr'])
+                    lr = self.lr_scheduler.optimizer.param_groups[0]['lr']
+                    print('The current learning rate:', lr)
 
             # Logging.
             loss = {}
@@ -175,7 +177,7 @@ class Solver(object):
             
              # For weights and biases.
             wandb.log({"epoch": i+1,
-                    "lr": self.lr_scheduler.get_last_lr()[0],
+                    "lr": lr,
                     "g_loss_id": g_loss_id.item(),
                     "g_loss_id_psnt": g_loss_id_psnt.item(),
                     "g_loss_cd": g_loss_cd.item()})
