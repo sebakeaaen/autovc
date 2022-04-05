@@ -6,7 +6,7 @@ import numpy as np
 
 class LinearNorm(torch.nn.Module):
     def __init__(self, in_dim, out_dim, bias=True, w_init_gain='linear'):
-        super(LinearNorm, self).__init__()
+        super(LinearNorm, self).__init__() # change for STFT
         self.linear_layer = torch.nn.Linear(in_dim, out_dim, bias=bias)
 
         torch.nn.init.xavier_uniform_(
@@ -41,20 +41,29 @@ class ConvNorm(torch.nn.Module):
 class Encoder(nn.Module):
     """Encoder module:
     """
-    def __init__(self, dim_neck, dim_emb, freq, speaker_embed):
+    def __init__(self, dim_neck, dim_emb, freq, model_type):
         super(Encoder, self).__init__()
         self.dim_neck = dim_neck
         self.freq = freq
         
         convolutions = []
         for i in range(3):
-            conv_layer = nn.Sequential(
-                ConvNorm(80+dim_emb if i==0 and speaker_embed else 257+dim_emb if i==0 and speaker_embed == False else 512,
+            if i == 0:
+                conv_layer = nn.Sequential(
+                ConvNorm(80+dim_emb if model_type == 'spmel' else 513+dim_emb,
                          512,
                          kernel_size=5, stride=1,
                          padding=2,
                          dilation=1, w_init_gain='relu'),
                 nn.BatchNorm1d(512))
+            else:
+                conv_layer = nn.Sequential(
+                        ConvNorm(512,
+                                512,
+                                kernel_size=5, stride=1,
+                                padding=2,
+                                dilation=1, w_init_gain='relu'),
+                        nn.BatchNorm1d(512))
             convolutions.append(conv_layer)
         self.convolutions = nn.ModuleList(convolutions)
         
@@ -84,7 +93,7 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     """Decoder module:
     """
-    def __init__(self, dim_neck, dim_emb, dim_pre, speaker_embed):
+    def __init__(self, dim_neck, dim_emb, dim_pre, model_type):
         super(Decoder, self).__init__()
         
         self.lstm1 = nn.LSTM(dim_neck*2+dim_emb, dim_pre, 1, batch_first=True)
@@ -103,7 +112,10 @@ class Decoder(nn.Module):
         
         self.lstm2 = nn.LSTM(dim_pre, 1024, 2, batch_first=True)
         
-        self.linear_projection = LinearNorm(1024, 80 if speaker_embed else 257) # for mel specs
+        if model_type == 'spmel':
+            self.linear_projection = LinearNorm(1024, 80) # for mel specs
+        else:
+            self.linear_projection = LinearNorm(1024, 513) # for mel specs
 
     def forward(self, x):
         
@@ -127,13 +139,13 @@ class Postnet(nn.Module):
         - Five 1-d convolution with 512 channels and kernel size 5
     """
 
-    def __init__(self, speaker_embed):
+    def __init__(self, model_type):
         super(Postnet, self).__init__()
         self.convolutions = nn.ModuleList()
 
         self.convolutions.append(
             nn.Sequential(
-                ConvNorm(80 if speaker_embed else 257, 512,
+                ConvNorm(80 if model_type == 'spmel' else 513, 512, # change for STFT
                          kernel_size=5, stride=1,
                          padding=2,
                          dilation=1, w_init_gain='tanh'),
@@ -153,11 +165,11 @@ class Postnet(nn.Module):
 
         self.convolutions.append(
             nn.Sequential(
-                ConvNorm(512, 80 if speaker_embed else 257,
+                ConvNorm(512, 80 if model_type == 'spmel' else 513, # change for STFT
                          kernel_size=5, stride=1,
                          padding=2,
                          dilation=1, w_init_gain='linear'),
-                nn.BatchNorm1d(80 if speaker_embed else 257))
+                nn.BatchNorm1d(80 if model_type == 'spmel' else 513)) # change for STFT
             )
 
     def forward(self, x):
@@ -171,12 +183,12 @@ class Postnet(nn.Module):
 
 class Generator(nn.Module):
     """Generator network."""
-    def __init__(self, dim_neck, dim_emb, dim_pre, freq, speaker_embed):
+    def __init__(self, dim_neck, dim_emb, dim_pre, freq, model_type):
         super(Generator, self).__init__()
         
-        self.encoder = Encoder(dim_neck, dim_emb, freq, speaker_embed)
-        self.decoder = Decoder(dim_neck, dim_emb, dim_pre, speaker_embed)
-        self.postnet = Postnet(speaker_embed)
+        self.encoder = Encoder(dim_neck, dim_emb, freq, model_type)
+        self.decoder = Decoder(dim_neck, dim_emb, dim_pre, model_type)
+        self.postnet = Postnet(model_type)
 
     def forward(self, x, c_org, c_trg):
                 
