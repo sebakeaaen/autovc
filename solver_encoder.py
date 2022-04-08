@@ -4,6 +4,8 @@ import torch.nn.functional as F
 import time
 import datetime
 import wandb
+import matplotlib.pyplot as plt
+from librosa import display
 
 
 class Solver(object):
@@ -67,7 +69,7 @@ class Solver(object):
         self.g_optimizer = torch.optim.Adam(self.G.parameters(), self.lr)
 
         if self.lr_scheduler == 'Cosine': 
-            self.lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.g_optimizer, T_max=10, eta_min=0)
+            self.lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.g_optimizer, T_max=10000, eta_min=0)
         elif self.lr_scheduler == 'Plateau':
             self.lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.g_optimizer, 'min')
         else:
@@ -89,6 +91,8 @@ class Solver(object):
     def train(self):
         # Set data loader.
         data_loader = self.vcc_loader
+
+        lr = self.lr
         
         # Print logs in specified order
         keys = ['G/loss_id','G/loss_id_psnt','G/loss_cd']
@@ -174,8 +178,38 @@ class Solver(object):
                 }
                 save_name = 'chkpnt_'+self.model_type + '_' + self.run_name+ '.ckpt'
                 torch.save(state, save_name)
+                
+                #log melspec
+                fig, axs = plt.subplots(2, 1, sharex=True)
+                print((x_real[0].T.detach().cpu().numpy() * 100 - 100).shape)
+                display.specshow(
+                    x_real[0].T.detach().cpu().numpy() * 100 - 100,
+                    y_axis="mel",
+                    x_axis="time",
+                    fmin=90,
+                    fmax=7_600,
+                    sr=16_000,
+                    ax=axs[0],
+                )
+                axs[0].set(title="Original Mel spectrogram")
+                axs[0].label_outer()
+                print((x_identic_psnt[0].T.detach().cpu().numpy() * 100 - 100).shape)
+                img = display.specshow(
+                    x_identic_psnt[0].T.detach().cpu().numpy() * 100 - 100,
+                    y_axis="mel",
+                    x_axis="time",
+                    fmin=90,
+                    fmax=7_600,
+                    sr=16_000,
+                    ax=axs[1],
+                )
+                axs[1].set(title="Converted Mel spectrogram")
+                fig.suptitle(f"{'git money git gud'}") #self.CHECKPOINT_DIR / Path(subject[0]).stem
+                fig.colorbar(img, ax=axs)
+                wandb.log({"Train mel spectrograms": wandb.Image(fig)}, step=i)
+                plt.close()
             
-             # For weights and biases.
+            # For weights and biases.
             wandb.log({"epoch": i+1,
                     "lr": lr,
                     "g_loss_id": g_loss_id.item(),

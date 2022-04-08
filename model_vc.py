@@ -50,7 +50,7 @@ class Encoder(nn.Module):
         for i in range(3):
             if i == 0:
                 conv_layer = nn.Sequential(
-                ConvNorm(80+dim_emb if model_type == 'spmel' else 513+dim_emb,
+                ConvNorm(80+dim_emb,
                          512,
                          kernel_size=5, stride=1,
                          padding=2,
@@ -112,10 +112,8 @@ class Decoder(nn.Module):
         
         self.lstm2 = nn.LSTM(dim_pre, 1024, 2, batch_first=True)
         
-        if model_type == 'spmel':
-            self.linear_projection = LinearNorm(1024, 80) # for mel specs
-        else:
-            self.linear_projection = LinearNorm(1024, 513) # for mel specs
+        
+        self.linear_projection = LinearNorm(1024, 80) # for mel specs
 
     def forward(self, x):
         
@@ -145,7 +143,7 @@ class Postnet(nn.Module):
 
         self.convolutions.append(
             nn.Sequential(
-                ConvNorm(80 if model_type == 'spmel' else 513, 512, # change for STFT
+                ConvNorm(80, 512, # change for STFT
                          kernel_size=5, stride=1,
                          padding=2,
                          dilation=1, w_init_gain='tanh'),
@@ -165,11 +163,11 @@ class Postnet(nn.Module):
 
         self.convolutions.append(
             nn.Sequential(
-                ConvNorm(512, 80 if model_type == 'spmel' else 513, # change for STFT
+                ConvNorm(512, 80, # change for STFT
                          kernel_size=5, stride=1,
                          padding=2,
                          dilation=1, w_init_gain='linear'),
-                nn.BatchNorm1d(80 if model_type == 'spmel' else 513)) # change for STFT
+                nn.BatchNorm1d(80)) # change for STFT
             )
 
     def forward(self, x):

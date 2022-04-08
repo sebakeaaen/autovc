@@ -38,4 +38,6 @@ nvidia-smi
 # Load the cuda module
 module load cuda/10.2
 
-python main.py --run_name spmel_cosine --learning_rate 0.1
+module load gcc/9.2.0
+
+python main.py --run_name get_rich_quick --learning_rate 0.1 --lr_scheduler "" --batch_size 1

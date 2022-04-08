@@ -8,3 +8,4 @@ wavenet_vocoder==0.1.1
 torchaudio==0.8.1
 torch==1.8.1
 torchvision==0.9.1
+matplotlib==3.5.1
