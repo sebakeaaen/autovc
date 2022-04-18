@@ -3,10 +3,15 @@ Generate speaker embeddings and metadata for training
 """
 import os
 import pickle
+
+from importlib_metadata import metadata
 from model_bl import D_VECTOR
 from collections import OrderedDict
 import numpy as np
 import torch
+import argparse
+
+np.random.seed(42069) # this works for all subjects in training folder!
 
 class Metadata(object):
 
@@ -14,7 +19,9 @@ class Metadata(object):
         """Initialize configurations."""
 
         self.speaker_embed = config.speaker_embed
+        self.model_type = config.model_type
         self.rootDir = config.data_dir+'/'+config.model_type # Directory containing spectrograms
+        self.rootDirMel = config.data_dir+'/spmel'
     
     def metadata(self):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -34,11 +41,11 @@ class Metadata(object):
         dirName, subdirList, _ = next(os.walk(self.rootDir))
         print('Found directory: %s' % dirName)
 
+        dirNameMel, _, _ = next(os.walk(self.rootDirMel))
+
         speakers = []
-        i = 0 # for the one-hot encoding
 
         for speaker in sorted(subdirList):
-            one_hot_encoding = torch.zeros(len(subdirList))
             print('Processing speaker: %s' % speaker)
             utterances = []
             utterances.append(speaker)
@@ -48,25 +55,20 @@ class Metadata(object):
             assert len(fileList) >= num_uttrs
             idx_uttrs = np.random.choice(len(fileList), size=num_uttrs, replace=False)
             embs = []
-            if self.speaker_embed:
-                for i in range(num_uttrs):
-                    tmp = np.load(os.path.join(dirName, speaker, fileList[idx_uttrs[i]]))
-                    candidates = np.delete(np.arange(len(fileList)), idx_uttrs)
-                    # choose another utterance if the current one is too short
-                    while tmp.shape[0] < len_crop:
-                        idx_alt = np.random.choice(candidates)
-                        tmp = np.load(os.path.join(dirName, speaker, fileList[idx_alt]))
-                        candidates = np.delete(candidates, np.argwhere(candidates==idx_alt))
-                    left = np.random.randint(0, tmp.shape[0]-len_crop)
-                    melsp = torch.from_numpy(tmp[np.newaxis, left:left+len_crop, :]).to(device)
-                    emb = C(melsp)
-                    embs.append(emb.detach().squeeze().cpu().numpy())     
-                utterances.append(np.mean(embs, axis=0))
-            else: # one-hot encoding
-                one_hot_encoding[i] = 1
-                utterances.append(one_hot_encoding)
-                i += 1
-    
+            for i in range(num_uttrs):
+                tmp = np.load(os.path.join(dirNameMel, speaker, fileList[idx_uttrs[i]]))
+                candidates = np.delete(np.arange(len(fileList)), idx_uttrs)
+                # choose another utterance if the current one is too short
+                while tmp.shape[0] < len_crop:
+                    idx_alt = np.random.choice(candidates)
+                    tmp = np.load(os.path.join(dirNameMel, speaker, fileList[idx_alt]))
+                    candidates = np.delete(candidates, np.argwhere(candidates==idx_alt))
+                left = np.random.randint(0, tmp.shape[0]-len_crop)
+                melsp = torch.from_numpy(tmp[np.newaxis, left:left+len_crop, :]).to(device)
+                emb = C(melsp)
+                embs.append(emb.detach().squeeze().cpu().numpy())     
+            utterances.append(np.mean(embs, axis=0))
+
             # create file list
             for fileName in sorted(fileList):
                 utterances.append(os.path.join(speaker,fileName))
@@ -90,4 +92,3 @@ class Metadata(object):
             #with open(os.path.join('.', 'metadata.pkl'), 'wb') as handle:
             with open(os.path.join(self.rootDir, 'metadata.pkl'), 'wb') as handle:
                 pickle.dump(metadata, handle)
-

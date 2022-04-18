@@ -1,4 +1,5 @@
 from model_vc import Generator
+from model_stft import GeneratorSTFT
 import torch
 import torch.nn.functional as F
 import time
@@ -64,9 +65,12 @@ class Solver(object):
 
     def build_model(self):
         
-        self.G = Generator(self.dim_neck, self.dim_emb, self.dim_pre, self.freq, self.speaker_embed)        
+        if self.model_type == 'spmel':
+            self.G = Generator(self.dim_neck, self.dim_emb, self.dim_pre, self.freq)
+        else:
+            self.G = GeneratorSTFT(self.dim_neck, self.dim_emb, self.dim_pre, self.freq)  
         
-        self.g_optimizer = torch.optim.Adam(self.G.parameters(), self.lr)
+        self.g_optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.G.parameters()), self.lr)
 
         if self.lr_scheduler == 'Cosine': 
             self.lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.g_optimizer, T_max=10000, eta_min=0)
@@ -95,8 +99,11 @@ class Solver(object):
         lr = self.lr
         
         # Print logs in specified order
-        keys = ['G/loss_id','G/loss_id_psnt','G/loss_cd']
-            
+        if self.model_type == 'spmel':
+            keys = ['G/loss_id','G/loss_id_psnt','G/loss_cd']
+        else:
+            keys = ['G/loss_id','G/loss_cd']
+
         # Start training.
         print('Start training...')
         start_time = time.time()
@@ -113,7 +120,6 @@ class Solver(object):
                 data_iter = iter(data_loader)
                 x_real, emb_org = next(data_iter)
             
-            
             x_real = x_real.to(self.device)
             emb_org = emb_org.to(self.device)
                         
@@ -126,17 +132,30 @@ class Solver(object):
             self.G = self.G.train()
                         
             # Identity mapping loss
-            x_identic, x_identic_psnt, code_real = self.G(x_real, emb_org, emb_org)
-            g_loss_id = F.mse_loss(x_real, x_identic.squeeze())   
-            g_loss_id_psnt = F.mse_loss(x_real, x_identic_psnt.squeeze())   
+            if self.model_type == 'spmel':
+                # for mel spectrograms (with postnet)
+                x_identic, x_identic_psnt, code_real = self.G(x_real, emb_org, emb_org)
+                g_loss_id = F.mse_loss(x_real, x_identic.squeeze())   
+                g_loss_id_psnt = F.mse_loss(x_real, x_identic_psnt.squeeze())   
             
-            # Code semantic loss.
-            code_reconst = self.G(x_identic_psnt, emb_org, None)
-            g_loss_cd = F.l1_loss(code_real, code_reconst)
+                # Code semantic loss.
+                code_reconst = self.G(x_identic_psnt, emb_org, None)
+                g_loss_cd = F.l1_loss(code_real, code_reconst)
 
+                # Backward and optimize.
+                g_loss = g_loss_id + g_loss_id_psnt + self.lambda_cd * g_loss_cd
+            else:
+                # for STFT (no postnet)
+                x_identic, code_real = self.G(x_real, emb_org, emb_org)
+                g_loss_id = F.mse_loss(x_real, x_identic.squeeze())   
+            
+                # Code semantic loss.
+                code_reconst = self.G(x_identic, emb_org, None)
+                g_loss_cd = F.l1_loss(code_real, code_reconst)
 
-            # Backward and optimize.
-            g_loss = g_loss_id + g_loss_id_psnt + self.lambda_cd * g_loss_cd
+                # Backward and optimize.
+                g_loss = g_loss_id + self.lambda_cd * g_loss_cd
+
             self.reset_grad()
             g_loss.backward()
             self.g_optimizer.step()
@@ -155,7 +174,8 @@ class Solver(object):
             # Logging.
             loss = {}
             loss['G/loss_id'] = g_loss_id.item()
-            loss['G/loss_id_psnt'] = g_loss_id_psnt.item()
+            if self.model_type == 'spmel':
+                loss['G/loss_id_psnt'] = g_loss_id_psnt.item()
             loss['G/loss_cd'] = g_loss_cd.item()
 
             # =================================================================================== #
@@ -184,37 +204,43 @@ class Solver(object):
                 print((x_real[0].T.detach().cpu().numpy() * 100 - 100).shape)
                 display.specshow(
                     x_real[0].T.detach().cpu().numpy() * 100 - 100,
-                    y_axis="mel",
+                    y_axis="dB",
                     x_axis="time",
                     fmin=90,
                     fmax=7_600,
                     sr=16_000,
                     ax=axs[0],
                 )
-                axs[0].set(title="Original Mel spectrogram")
+                axs[0].set(title="Original spectrogram")
                 axs[0].label_outer()
-                print((x_identic_psnt[0].T.detach().cpu().numpy() * 100 - 100).shape)
+                print((x_identic[0].T.detach().cpu().numpy() * 100 - 100).shape)
                 img = display.specshow(
-                    x_identic_psnt[0].T.detach().cpu().numpy() * 100 - 100,
-                    y_axis="mel",
+                    x_identic[0].T.detach().cpu().numpy() * 100 - 100,
+                    y_axis="dB",
                     x_axis="time",
                     fmin=90,
                     fmax=7_600,
                     sr=16_000,
                     ax=axs[1],
                 )
-                axs[1].set(title="Converted Mel spectrogram")
+                axs[1].set(title="Converted spectrogram")
                 fig.suptitle(f"{'git money git gud'}") #self.CHECKPOINT_DIR / Path(subject[0]).stem
                 fig.colorbar(img, ax=axs)
-                wandb.log({"Train mel spectrograms": wandb.Image(fig)}, step=i)
+                wandb.log({"Train spectrograms": wandb.Image(fig)}, step=i)
                 plt.close()
             
             # For weights and biases.
-            wandb.log({"epoch": i+1,
-                    "lr": lr,
-                    "g_loss_id": g_loss_id.item(),
-                    "g_loss_id_psnt": g_loss_id_psnt.item(),
-                    "g_loss_cd": g_loss_cd.item()})
+            if self.model_type == 'spmel':
+                wandb.log({"epoch": i+1,
+                        "lr": lr,
+                        "g_loss_id": g_loss_id.item(),
+                        "g_loss_id_psnt": g_loss_id_psnt.item(),
+                        "g_loss_cd": g_loss_cd.item()})
+            else:
+                wandb.log({"epoch": i+1,
+                        "lr": lr,
+                        "g_loss_id": g_loss_id.item(),
+                        "g_loss_cd": g_loss_cd.item()})
 
             wandb.watch(self.G, log = None)
                 

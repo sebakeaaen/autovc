@@ -5,15 +5,15 @@
 ### -- set the job Name -- 
 #BSUB -J AutoVC
 ### -- ask for number of cores (default: 1) -- 
-#BSUB -n 2
+#BSUB -n 1
 ### -- specify that the cores must be on the same host -- 
 #BSUB -R "span[hosts=1]"
 ### -- For requesting a GPU with 32GB of memory, then please add a
-#BSUB -R "select[gpu16gb]"
+#BSUB -R "select[gpu32gb]"
 ### -- specify that we need 2GB of memory per core/slot -- 
-#BSUB -R "rusage[mem=16GB]"
+#BSUB -R "rusage[mem=32GB]"
 ### -- specify that we want the job to get killed if it exceeds 3 GB per core/slot -- 
-#BSUB -M 32GB
+#BSUB -M 128GB
 ### -- set walltime limit: hh:mm -- 
 #BSUB -W 24:00
 #BSUB -gpu "num=1"
@@ -40,4 +40,4 @@ module load cuda/10.2
 
 module load gcc/9.2.0
 
-python main.py --run_name get_rich_quick --learning_rate 0.1 --lr_scheduler "" --batch_size 1
+python main.py --run_name ditte_stft_test

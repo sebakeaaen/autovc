@@ -6,7 +6,7 @@ import numpy as np
 
 class LinearNorm(torch.nn.Module):
     def __init__(self, in_dim, out_dim, bias=True, w_init_gain='linear'):
-        super(LinearNorm, self).__init__() # change for STFT
+        super(LinearNorm, self).__init__()
         self.linear_layer = torch.nn.Linear(in_dim, out_dim, bias=bias)
 
         torch.nn.init.xavier_uniform_(
@@ -41,29 +41,20 @@ class ConvNorm(torch.nn.Module):
 class Encoder(nn.Module):
     """Encoder module:
     """
-    def __init__(self, dim_neck, dim_emb, freq, model_type):
+    def __init__(self, dim_neck, dim_emb, freq):
         super(Encoder, self).__init__()
         self.dim_neck = dim_neck
         self.freq = freq
         
         convolutions = []
         for i in range(3):
-            if i == 0:
-                conv_layer = nn.Sequential(
-                ConvNorm(80+dim_emb,
+            conv_layer = nn.Sequential(
+                ConvNorm(80+dim_emb if i==0 else 512, #for mel specs
                          512,
                          kernel_size=5, stride=1,
                          padding=2,
                          dilation=1, w_init_gain='relu'),
                 nn.BatchNorm1d(512))
-            else:
-                conv_layer = nn.Sequential(
-                        ConvNorm(512,
-                                512,
-                                kernel_size=5, stride=1,
-                                padding=2,
-                                dilation=1, w_init_gain='relu'),
-                        nn.BatchNorm1d(512))
             convolutions.append(conv_layer)
         self.convolutions = nn.ModuleList(convolutions)
         
@@ -93,7 +84,7 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     """Decoder module:
     """
-    def __init__(self, dim_neck, dim_emb, dim_pre, model_type):
+    def __init__(self, dim_neck, dim_emb, dim_pre):
         super(Decoder, self).__init__()
         
         self.lstm1 = nn.LSTM(dim_neck*2+dim_emb, dim_pre, 1, batch_first=True)
@@ -112,7 +103,6 @@ class Decoder(nn.Module):
         
         self.lstm2 = nn.LSTM(dim_pre, 1024, 2, batch_first=True)
         
-        
         self.linear_projection = LinearNorm(1024, 80) # for mel specs
 
     def forward(self, x):
@@ -129,7 +119,7 @@ class Decoder(nn.Module):
         
         decoder_output = self.linear_projection(outputs)
 
-        return decoder_output
+        return decoder_output   
     
     
 class Postnet(nn.Module):
@@ -137,13 +127,13 @@ class Postnet(nn.Module):
         - Five 1-d convolution with 512 channels and kernel size 5
     """
 
-    def __init__(self, model_type):
+    def __init__(self):
         super(Postnet, self).__init__()
         self.convolutions = nn.ModuleList()
 
         self.convolutions.append(
             nn.Sequential(
-                ConvNorm(80, 512, # change for STFT
+                ConvNorm(80, 512, # for mel specs
                          kernel_size=5, stride=1,
                          padding=2,
                          dilation=1, w_init_gain='tanh'),
@@ -163,11 +153,11 @@ class Postnet(nn.Module):
 
         self.convolutions.append(
             nn.Sequential(
-                ConvNorm(512, 80, # change for STFT
+                ConvNorm(512, 80, # for mel specs
                          kernel_size=5, stride=1,
                          padding=2,
                          dilation=1, w_init_gain='linear'),
-                nn.BatchNorm1d(80)) # change for STFT
+                nn.BatchNorm1d(80)) # for mel specs
             )
 
     def forward(self, x):
@@ -181,12 +171,12 @@ class Postnet(nn.Module):
 
 class Generator(nn.Module):
     """Generator network."""
-    def __init__(self, dim_neck, dim_emb, dim_pre, freq, model_type):
+    def __init__(self, dim_neck, dim_emb, dim_pre, freq):
         super(Generator, self).__init__()
         
-        self.encoder = Encoder(dim_neck, dim_emb, freq, model_type)
-        self.decoder = Decoder(dim_neck, dim_emb, dim_pre, model_type)
-        self.postnet = Postnet(model_type)
+        self.encoder = Encoder(dim_neck, dim_emb, freq)
+        self.decoder = Decoder(dim_neck, dim_emb, dim_pre)
+        self.postnet = Postnet()
 
     def forward(self, x, c_org, c_trg):
                 
@@ -206,7 +196,7 @@ class Generator(nn.Module):
         mel_outputs_postnet = self.postnet(mel_outputs.transpose(2,1))
         mel_outputs_postnet = mel_outputs + mel_outputs_postnet.transpose(2,1)
         
-        #mel_outputs = mel_outputs.unsqueeze(1)
-        #mel_outputs_postnet = mel_outputs_postnet.unsqueeze(1)
+        mel_outputs = mel_outputs.unsqueeze(1)
+        mel_outputs_postnet = mel_outputs_postnet.unsqueeze(1)
         
         return mel_outputs, mel_outputs_postnet, torch.cat(codes, dim=-1)

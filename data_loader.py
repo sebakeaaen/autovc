@@ -14,6 +14,7 @@ class Utterances(data.Dataset):
     def __init__(self, root_dir, len_crop, model_type):
         """Initialize and preprocess the Utterances dataset."""
         #self.root_dir = root_dir
+        torch.cuda.empty_cache()
         self.len_crop = len_crop
         self.step = 10
 
@@ -70,7 +71,7 @@ class Utterances(data.Dataset):
         if tmp.shape[0] < self.len_crop:
             len_pad = self.len_crop - tmp.shape[0]
             #uttr = np.pad(tmp, ((0,len_pad),(0,0)), 'constant') # change to torch padding
-            uttr = np.pad(tmp, ((0,len_pad),(0,0)), 'constant')
+            uttr = torch.nn.functional.pad(tmp, (0, 0, 0, len_pad), "constant")
         elif tmp.shape[0] > self.len_crop:
             left = np.random.randint(tmp.shape[0]-self.len_crop)
             uttr = tmp[left:left+self.len_crop, :]

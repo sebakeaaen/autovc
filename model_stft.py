@@ -2,185 +2,29 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-
-
-class LinearNorm(torch.nn.Module):
-    def __init__(self, in_dim, out_dim, bias=True, w_init_gain='linear'):
-        super(LinearNorm, self).__init__() # change for STFT
-        self.linear_layer = torch.nn.Linear(in_dim, out_dim, bias=bias)
-
-        torch.nn.init.xavier_uniform_(
-            self.linear_layer.weight,
-            gain=torch.nn.init.calculate_gain(w_init_gain))
-
-    def forward(self, x):
-        return self.linear_layer(x)
-
-
-class ConvNorm(torch.nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=1, stride=1,
-                 padding=None, dilation=1, bias=True, w_init_gain='linear'):
-        super(ConvNorm, self).__init__()
-        if padding is None:
-            assert(kernel_size % 2 == 1)
-            padding = int(dilation * (kernel_size - 1) / 2)
-
-        self.conv = torch.nn.Conv1d(in_channels, out_channels,
-                                    kernel_size=kernel_size, stride=stride,
-                                    padding=padding, dilation=dilation,
-                                    bias=bias)
-
-        torch.nn.init.xavier_uniform_(
-            self.conv.weight, gain=torch.nn.init.calculate_gain(w_init_gain))
-
-    def forward(self, signal):
-        conv_signal = self.conv(signal)
-        return conv_signal
-
-
-class Encoder(nn.Module):
-    """Encoder module:
-    """
-    def __init__(self, dim_neck, dim_emb, freq):
-        super(Encoder, self).__init__()
-        self.dim_neck = dim_neck
-        self.freq = freq
-        
-        convolutions = []
-        for i in range(3):
-            conv_layer = nn.Sequential(
-            ConvNorm(513+dim_emb if i==0 else 512, # dimensions should be 513 for stft
-                        512,
-                        kernel_size=5, stride=1,
-                        padding=2,
-                        dilation=1, w_init_gain='relu'),
-            nn.BatchNorm1d(512))
-            convolutions.append(conv_layer)
-        self.convolutions = nn.ModuleList(convolutions)
-        
-        self.lstm = nn.LSTM(512, dim_neck, 2, batch_first=True, bidirectional=True)
-
-    def forward(self, x, c_org):
-        x = x.squeeze(1).transpose(2,1)
-        c_org = c_org.unsqueeze(-1).expand(-1, -1, x.size(-1))
-        x = torch.cat((x, c_org), dim=1)
-        
-        for conv in self.convolutions:
-            x = F.relu(conv(x))
-        x = x.transpose(1, 2)
-        
-        self.lstm.flatten_parameters()
-        outputs, _ = self.lstm(x)
-        out_forward = outputs[:, :, :self.dim_neck]
-        out_backward = outputs[:, :, self.dim_neck:]
-        
-        codes = []
-        for i in range(0, outputs.size(1), self.freq):
-            codes.append(torch.cat((out_forward[:,i+self.freq-1,:],out_backward[:,i,:]), dim=-1))
-
-        return codes
-      
-        
-class Decoder(nn.Module):
-    """Decoder module:
-    """
-    def __init__(self, dim_neck, dim_emb, dim_pre):
-        super(Decoder, self).__init__()
-        
-        self.lstm1 = nn.LSTM(dim_neck*2+dim_emb, dim_pre, 1, batch_first=True)
-        
-        convolutions = []
-        for i in range(3):
-            conv_layer = nn.Sequential(
-                ConvNorm(dim_pre,
-                         dim_pre,
-                         kernel_size=5, stride=1,
-                         padding=2,
-                         dilation=1, w_init_gain='relu'),
-                nn.BatchNorm1d(dim_pre))
-            convolutions.append(conv_layer)
-        self.convolutions = nn.ModuleList(convolutions)
-        
-        self.lstm2 = nn.LSTM(dim_pre, 1024, 2, batch_first=True)
-        
-        self.linear_projection = LinearNorm(1024, 513) # for stft
-
-    def forward(self, x):
-        
-        #self.lstm1.flatten_parameters()
-        x, _ = self.lstm1(x)
-        x = x.transpose(1, 2)
-        
-        for conv in self.convolutions:
-            x = F.relu(conv(x))
-        x = x.transpose(1, 2)
-        
-        outputs, _ = self.lstm2(x)
-        
-        decoder_output = self.linear_projection(outputs)
-
-        return decoder_output
-    
-    
-class Postnet(nn.Module):
-    """Postnet
-        - Five 1-d convolution with 512 channels and kernel size 5
-    """
-
-    def __init__(self, model_type):
-        super(Postnet, self).__init__()
-        self.convolutions = nn.ModuleList()
-
-        self.convolutions.append(
-            nn.Sequential(
-                ConvNorm(513, 512, # change for STFT
-                         kernel_size=5, stride=1,
-                         padding=2,
-                         dilation=1, w_init_gain='tanh'),
-                nn.BatchNorm1d(512))
-        )
-
-        for i in range(1, 5 - 1):
-            self.convolutions.append(
-                nn.Sequential(
-                    ConvNorm(512,
-                             512,
-                             kernel_size=5, stride=1,
-                             padding=2,
-                             dilation=1, w_init_gain='tanh'),
-                    nn.BatchNorm1d(512))
-            )
-
-        self.convolutions.append(
-            nn.Sequential(
-                ConvNorm(512, 513,
-                         kernel_size=5, stride=1,
-                         padding=2,
-                         dilation=1, w_init_gain='linear'),
-                nn.BatchNorm1d(513))
-            )
-
-    def forward(self, x):
-        for i in range(len(self.convolutions) - 1):
-            x = torch.tanh(self.convolutions[i](x))
-
-        x = self.convolutions[-1](x)
-
-        return x    
-    
+from model_vc import LinearNorm, ConvNorm, Generator
 
 class GeneratorSTFT(nn.Module):
-    """Generator network for STFT."""
+    """Generator network for STFT. Based on the pretrained model AutoVC"""
     def __init__(self, dim_neck, dim_emb, dim_pre, freq):
         super(GeneratorSTFT, self).__init__()
         
-        self.encoder = Encoder(dim_neck, dim_emb, freq)
-        self.decoder = Decoder(dim_neck, dim_emb, dim_pre)
-        self.postnet = Postnet()
+        # load pretrained model
+        self.model = Generator(dim_neck,dim_emb,dim_pre,freq)
+        checkpoint = torch.load('autovc.ckpt', map_location='cpu')
+        self.model.load_state_dict(checkpoint['model'])
+
+        # freze all weights
+        for param in self.model.parameters():
+            param.requires_grad = False
+
+        # modify en- and decoder to STFT sizes
+        self.model.encoder.convolutions[0][0] = ConvNorm(513+dim_emb, 512, kernel_size = 5, stride = 1, padding = 2)
+        self.model.decoder.linear_projection = LinearNorm(in_dim = 1024, out_dim = 513)
 
     def forward(self, x, c_org, c_trg):
                 
-        codes = self.encoder(x, c_org)
+        codes = self.model.encoder(x, c_org)
         if c_trg is None:
             return torch.cat(codes, dim=-1)
         
@@ -191,9 +35,9 @@ class GeneratorSTFT(nn.Module):
         
         encoder_outputs = torch.cat((code_exp, c_trg.unsqueeze(1).expand(-1,x.size(1),-1)), dim=-1)
         
-        stft_outputs = self.decoder(encoder_outputs)
+        stft_outputs = self.model.decoder(encoder_outputs)
                 
-        stft_outputs_postnet = self.postnet(stft_outputs.transpose(2,1))
-        stft_outputs_postnet = stft_outputs + stft_outputs_postnet.transpose(2,1)
+        #stft_outputs_postnet = self.postnet(stft_outputs.transpose(2,1))
+        #stft_outputs_postnet = stft_outputs + stft_outputs_postnet.transpose(2,1)
         
-        return stft_outputs, stft_outputs_postnet, torch.cat(codes, dim=-1)
+        return stft_outputs, torch.cat(codes, dim=-1)
