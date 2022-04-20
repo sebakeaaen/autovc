@@ -65,8 +65,6 @@ if __name__ == '__main__':
 
     # Miscellaneous.
     parser.add_argument('--log_step', type=int, default=100)
-
     config = parser.parse_args()
-    config.run_name = config.run_name + datetime.now().strftime('_%y%B%d_%H%M_%S')
     print(config)
     main(config)

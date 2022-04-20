@@ -8,6 +8,7 @@ import wandb
 import matplotlib.pyplot as plt
 from librosa import display
 import numpy as np
+import os
 
 
 class Solver(object):
@@ -71,6 +72,8 @@ class Solver(object):
         else:
             self.G = GeneratorSTFT(self.dim_neck, self.dim_emb, self.dim_pre, self.freq)  
         
+        self.G.to(self.device)
+        
         self.g_optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.G.parameters()), self.lr)
 
         if self.lr_scheduler == 'Cosine': 
@@ -80,8 +83,14 @@ class Solver(object):
         else:
             print('No learning rate scheduler used')
             self.lr_scheduler = None
-            
-        self.G.to(self.device)
+
+        self.path = 'chkpnt_' + self.model_type + '_' + self.run_name + '.ckpt'
+        self.file_exists = os.path.exists(self.path)
+        if self.file_exists:
+            checkpoint=torch.load(self.path, map_location=self.device)
+            self.g_optimizer.load_state_dict(checkpoint['optimizer'])
+            self.G.load_state_dict(checkpoint['state_dict'])
+            self.epoch = checkpoint['epoch']
         
 
     def reset_grad(self):
@@ -106,6 +115,9 @@ class Solver(object):
         print('Start training...')
         start_time = time.time()
         for i in range(self.num_iters):
+
+            if self.file_exists:
+                i = self.epoch
 
             # =================================================================================== #
             #                             1. Preprocess input data                                #
@@ -194,7 +206,7 @@ class Solver(object):
                     'optimizer': self.g_optimizer.state_dict(),
                     'loss': loss
                 }
-                save_name = 'chkpnt_'+self.model_type + '_' + self.run_name+ '.ckpt'
+                save_name = 'chkpnt_'+self.model_type + '_' + self.run_name+ '_resumed.ckpt'
                 torch.save(state, save_name)
                 
                 #log melspec
