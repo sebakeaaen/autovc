@@ -76,7 +76,7 @@ class Spect(object):
                     wav = y * 0.96 + (prng.rand(y.shape[0])-0.5)*1e-06
                     # Compute spect
                     D = self.pySTFT(wav)
-                    if self.speaker_embed: # save mel spec
+                    if self.model_type == 'spmel': # save mel spec
                         # Convert to mel and normalize
                         D_mel = np.dot(D.T, mel_basis)
                         D_db = 20 * np.log10(np.maximum(min_level, D_mel)) - 16

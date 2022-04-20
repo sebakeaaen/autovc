@@ -15,7 +15,7 @@ class Metadata(object):
 
         self.speaker_embed = config.speaker_embed
         self.data_dir = config.data_dir
-        self.rootDir = config.data_dir+'/'+config.model_type # Directory containing spectrograms
+        self.rootDir = config.data_dir+'/'+config.model_type # Directory containing spectrograms (either spmel or stft)
     
     def metadata(self):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -62,7 +62,7 @@ class Metadata(object):
                     melsp = torch.from_numpy(tmp[np.newaxis, left:left+len_crop, :]).cuda()
                     emb = C(melsp)
                     embs.append(emb.detach().squeeze().cpu().numpy())     
-                utterances.append(np.mean(embs, axis=0))
+                utterances.append(np.mean(embs, axis=0)) # average speaker embedding
             else: # one-hot encoding
                 one_hot_encoding[i] = 1
                 utterances.append(one_hot_encoding)
@@ -77,7 +77,7 @@ class Metadata(object):
             pickle.dump(speakers, handle)
 
         ######### Our modification: Reading numpy files in speaker embedding ##########
-        if self.speaker_embed:
+        if self.speaker_embed: # i.e. not neccessesary for one-hot encoding..
             with open(os.path.join(self.rootDir, 'train.pkl'), 'rb') as file:
                 train = pickle.load(file)
 
@@ -88,7 +88,6 @@ class Metadata(object):
                 first_mel_spec = np.load(self.data_dir+'/spmel/'+subject[2])
                 metadata.append(subject[0:2] + [first_mel_spec] + [subject[2]])
         
-            #with open(os.path.join('.', 'metadata.pkl'), 'wb') as handle:
             with open(os.path.join(self.rootDir, 'metadata.pkl'), 'wb') as handle:
                 pickle.dump(metadata, handle)
 

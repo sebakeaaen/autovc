@@ -25,19 +25,21 @@ def main(config):
 
     # Generate training metadata (if not allready done)
     path = config.data_dir + '/' + config.model_type + '/train.pkl'
-    if os.path.exists(path):
-        print("Metadata already created - continuing...")
-    else:
-        print('Metadata does not exists - creating...')
-        md = Metadata(config)
-        md.metadata()
+    #if os.path.exists(path):
+    #    print("Metadata already created - continuing...")
+    #else:
+    #    print('Metadata does not exists - creating...')
+    #    md = Metadata(config)
+    #    md.metadata()
+    md = Metadata(config)
+    md.metadata()
 
     # Data loader.
-    vcc_loader = get_loader(config.data_dir, config.batch_size, config.len_crop, config.model_type)
+    #vcc_loader = get_loader(config.data_dir, config.batch_size, config.len_crop, config.model_type)
     
-    solver = Solver(vcc_loader, config)
+    #solver = Solver(vcc_loader, config)
 
-    solver.train()
+    #solver.train()
     
         
 
@@ -59,9 +61,11 @@ if __name__ == '__main__':
     parser.add_argument('--len_crop', type=int, default=128, help='dataloader output sequence length')
     parser.add_argument('--learning_rate', type=float, default=0.0001, help='learning rate for training')
     parser.add_argument('--speaker_embed',type=bool, default=True, help='mel-based speaker embedding or one-hot-encoding')
-    parser.add_argument('--model_type',type=str,default='stft',help='input/output type: spmel or stft')
-    parser.add_argument('--run_name',required=True, type=str, help='name of run for wan_db and checkpoints')
+    parser.add_argument('--model_type',type=str,default='spmel',help='input/output type: spmel or stft')
+    parser.add_argument('--run_name',required=True, type=str, help='name of run for wandb and checkpoints')
     parser.add_argument('--lr_scheduler',type=str,default='Plateau',help='Cosine or Plateau')
+    parser.add_argument('--pretrained_model',type=str,default='original',help='original or reproduced autovc model')
+    parser.add_argument('--train_type', type=str, default='scratch', help='finetune or scratch')
 
     # Miscellaneous.
     parser.add_argument('--log_step', type=int, default=100)

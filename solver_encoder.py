@@ -31,6 +31,8 @@ class Solver(object):
         # Training configurations.
         self.batch_size = config.batch_size
         self.num_iters = config.num_iters
+        self.pretrained_model = config.pretrained_model
+        self.train_type = config.train_type
         
         # models
         self.model_type = config.model_type
@@ -60,6 +62,25 @@ class Solver(object):
         # Build the model and tensorboard.
         self.build_model()
 
+        # loading model checkpoints and freezing weights  (OBS! need modification!!)
+        if self.train_type == 'finetune': 
+            print('Finetuning model')
+            if self.pretrained_model == 'original':
+                print('Using original autovc model as pretrained model')
+                checkpoint = torch.load("autovc.pth", map_location=self.device)
+                self.G.load_state_dict(checkpoint["state_dict"]) # should load weights for basic autovc model and ignore that there are no pretrained weights for the conv-tasnet part 
+                for param in self.G.parameters():
+                    param.requires_grad = False # freeze
+            else: # self.pretrained_model == 'reproduced':
+                print('Using reproduced autovc model as pretrained model')
+                checkpoint = torch.load("model_checkpoint_mel.pth", map_location=self.device)
+                self.G.load_state_dict(checkpoint["state_dict"]) # samme comment here as above
+                for param in self.G.parameters():
+                    param.requires_grad = False # freeze
+        else: # self.train_type == 'scratch'
+            print('Training model from scratch')
+        # also need to write code such that different layers in the model are trained with different learning rates..
+
         # Set up weights and biases config
         wandb.config.update(config)
 
@@ -80,7 +101,7 @@ class Solver(object):
         else:
             print('No learning rate scheduler used')
             self.lr_scheduler = None
-            
+
         self.G.to(self.device)
         
 
