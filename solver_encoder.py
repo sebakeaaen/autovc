@@ -7,6 +7,7 @@ import datetime
 import wandb
 import matplotlib.pyplot as plt
 from librosa import display
+import numpy as np
 
 
 class Solver(object):
@@ -99,10 +100,7 @@ class Solver(object):
         lr = self.lr
         
         # Print logs in specified order
-        if self.model_type == 'spmel':
-            keys = ['G/loss_id','G/loss_id_psnt','G/loss_cd']
-        else:
-            keys = ['G/loss_id','G/loss_cd']
+        keys = ['G/loss_id','G/loss_id_psnt','G/loss_cd']
 
         # Start training.
         print('Start training...')
@@ -132,29 +130,28 @@ class Solver(object):
             self.G = self.G.train()
                         
             # Identity mapping loss
-            if self.model_type == 'spmel':
-                # for mel spectrograms (with postnet)
-                x_identic, x_identic_psnt, code_real = self.G(x_real, emb_org, emb_org)
-                g_loss_id = F.mse_loss(x_real, x_identic.squeeze())   
+            x_identic, x_identic_psnt, code_real = self.G(x_real, emb_org, emb_org)
+            g_loss_id = F.mse_loss(x_real, x_identic.squeeze())   
+
+            if self.model_type =='spmel':
                 g_loss_id_psnt = F.mse_loss(x_real, x_identic_psnt.squeeze())   
-            
+        
                 # Code semantic loss.
                 code_reconst = self.G(x_identic_psnt, emb_org, None)
                 g_loss_cd = F.l1_loss(code_real, code_reconst)
 
                 # Backward and optimize.
                 g_loss = g_loss_id + g_loss_id_psnt + self.lambda_cd * g_loss_cd
-            else:
-                # for STFT (no postnet)
-                x_identic, code_real = self.G(x_real, emb_org, emb_org)
-                g_loss_id = F.mse_loss(x_real, x_identic.squeeze())   
-            
+            else: 
                 # Code semantic loss.
                 code_reconst = self.G(x_identic, emb_org, None)
                 g_loss_cd = F.l1_loss(code_real, code_reconst)
 
                 # Backward and optimize.
                 g_loss = g_loss_id + self.lambda_cd * g_loss_cd
+
+                # set postnet loss to nan
+                g_loss_id_psnt = torch.tensor(float('nan'))
 
             self.reset_grad()
             g_loss.backward()
@@ -174,8 +171,7 @@ class Solver(object):
             # Logging.
             loss = {}
             loss['G/loss_id'] = g_loss_id.item()
-            if self.model_type == 'spmel':
-                loss['G/loss_id_psnt'] = g_loss_id_psnt.item()
+            loss['G/loss_id_psnt'] = g_loss_id_psnt.item()
             loss['G/loss_cd'] = g_loss_cd.item()
 
             # =================================================================================== #
@@ -195,6 +191,8 @@ class Solver(object):
                 state = {
                     'epoch': i+1,
                     'state_dict': self.G.state_dict(),
+                    'optimizer': self.g_optimizer.state_dict(),
+                    'loss': loss
                 }
                 save_name = 'chkpnt_'+self.model_type + '_' + self.run_name+ '.ckpt'
                 torch.save(state, save_name)
@@ -204,7 +202,7 @@ class Solver(object):
                 print((x_real[0].T.detach().cpu().numpy() * 100 - 100).shape)
                 display.specshow(
                     x_real[0].T.detach().cpu().numpy() * 100 - 100,
-                    y_axis="dB",
+                    y_axis=("mel" if self.model_type == 'spmel' else "fft"),
                     x_axis="time",
                     fmin=90,
                     fmax=7_600,
@@ -216,7 +214,7 @@ class Solver(object):
                 print((x_identic[0].T.detach().cpu().numpy() * 100 - 100).shape)
                 img = display.specshow(
                     x_identic[0].T.detach().cpu().numpy() * 100 - 100,
-                    y_axis="dB",
+                    y_axis=("mel" if self.model_type == 'spmel' else "fft"),
                     x_axis="time",
                     fmin=90,
                     fmax=7_600,
@@ -230,17 +228,11 @@ class Solver(object):
                 plt.close()
             
             # For weights and biases.
-            if self.model_type == 'spmel':
-                wandb.log({"epoch": i+1,
-                        "lr": lr,
-                        "g_loss_id": g_loss_id.item(),
-                        "g_loss_id_psnt": g_loss_id_psnt.item(),
-                        "g_loss_cd": g_loss_cd.item()})
-            else:
-                wandb.log({"epoch": i+1,
-                        "lr": lr,
-                        "g_loss_id": g_loss_id.item(),
-                        "g_loss_cd": g_loss_cd.item()})
+            wandb.log({"epoch": i+1,
+                    "lr": lr,
+                    "g_loss_id": g_loss_id.item(),
+                    "g_loss_id_psnt": g_loss_id_psnt.item(),
+                    "g_loss_cd": g_loss_cd.item()})
 
             wandb.watch(self.G, log = None)
                 
