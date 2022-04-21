@@ -11,14 +11,13 @@ from multiprocessing import Process, Manager
 class Utterances(data.Dataset):
     """Dataset class for the Utterances dataset."""
 
-    def __init__(self, root_dir, len_crop, model_type):
+    def __init__(self, data_dir, len_crop, model_type):
         """Initialize and preprocess the Utterances dataset."""
-        #self.root_dir = root_dir
-        torch.cuda.empty_cache()
+        self.root_dir = data_dir + '/' + model_type
         self.len_crop = len_crop
         self.step = 10
 
-        self.root_dir = root_dir + '/' + model_type
+        torch.cuda.empty_cache()
         
         with open(os.path.join(self.root_dir, 'train.pkl'), 'rb') as file:
             meta = pickle.load(file)

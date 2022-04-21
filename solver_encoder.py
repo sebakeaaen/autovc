@@ -16,6 +16,8 @@ class Solver(object):
     def __init__(self, vcc_loader, config):
         """Initialize configurations."""
 
+        self.main_dir = config.main_dir
+
         # Data loader.
         self.vcc_loader = vcc_loader
 
@@ -25,13 +27,16 @@ class Solver(object):
         self.dim_emb = config.dim_emb
         self.dim_pre = config.dim_pre
         self.freq = config.freq
-        self.lr = config.learning_rate
+        self.lr_global = config.lr_global
+        self.lr_convtas = config.lr_convtas
         self.lr_scheduler = config.lr_scheduler
         self.run_name = config.run_name
 
         # Training configurations.
         self.batch_size = config.batch_size
         self.num_iters = config.num_iters
+        self.pretrained_model = config.pretrained_model
+        self.train_type = config.train_type
         
         # models
         self.model_type = config.model_type
@@ -67,6 +72,24 @@ class Solver(object):
         # Build the model and tensorboard.
         self.build_model()
 
+        # loading model checkpoints and freezing weights  (OBS! might need modification!!)
+        if self.train_type == 'finetune': 
+            print('Finetuning model')
+            if self.pretrained_model == 'original':
+                print('Using original autovc model as pretrained model')
+                checkpoint = torch.load("autovc.pth", map_location=self.device)
+                self.G.load_state_dict(checkpoint["state_dict"]) # should load weights for basic autovc model and ignore that there are no pretrained weights for the conv-tasnet part 
+                for param in self.G.parameters():
+                    param.requires_grad = False # freeze
+            else: # self.pretrained_model == 'reproduced':
+                print('Using reproduced autovc model as pretrained model') # OBS! not correct checkpoint..
+                checkpoint = torch.load(self.main_dir+'/models/model_checkpoint_mel.pth', map_location=self.device)
+                self.G.load_state_dict(checkpoint["state_dict"]) # samme comment here as above
+                for param in self.G.parameters():
+                    param.requires_grad = False # freeze
+        else: # self.train_type == 'scratch'
+            print('Training model from scratch')
+
         # Set up weights and biases config
         wandb.config.update(config, allow_val_change=True)
 
@@ -78,10 +101,15 @@ class Solver(object):
         else:
             self.G = GeneratorSTFT(self.dim_neck, self.dim_emb, self.dim_pre, self.freq)  
         
-        self.G.to(self.device)
-        
-        self.g_optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.G.parameters()), self.lr)
+        self.g_optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.G.parameters()), self.lr_global)
+        '''
+        self.g_optimizer = torch.optim.Adam([
+            {"params": self.G.ConvTasEncoder.parameters(), "lr": self.lr_convtas},
+            {"params": self.G.ConvTasDecoder.parameters(), "lr": self.lr_convtas}],
+            lr=self.lr_global)
+        '''
 
+        # OBS! I guess we only want to use lr scheduler on convtas encoder and decoder or what? if so, this should be changed..
         if self.lr_scheduler == 'Cosine': 
             self.lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.g_optimizer, T_max=10000, eta_min=0)
         elif self.lr_scheduler == 'Plateau':
@@ -114,6 +142,8 @@ class Solver(object):
         lr = self.lr
 
         num_iter = 0
+        lr_global = self.lr_global
+        lr_convtas = self.lr_convtas
         
         # Print logs in specified order
         keys = ['G/loss_id','G/loss_id_psnt','G/loss_cd']
@@ -178,16 +208,16 @@ class Solver(object):
             g_loss.backward()
             self.g_optimizer.step()
 
-            # Learning rate scheduler step
+            # Learning rate scheduler step! OBS! 
             if self.lr_scheduler is not None:
                 if self.lr_scheduler == 'Cosine': 
                     self.lr_scheduler.step()
-                    lr = self.lr_scheduler.get_last_lr()[0]
-                    print('The current learning rate:', lr)
+                    lr_convtas = self.lr_scheduler.get_last_lr()[0]
+                    print('The current convtas learning rate:', lr_convtas)
                 else: # Plateau
                     self.lr_scheduler.step(g_loss) # the loss should be validation loss not training loss..
-                    lr = self.lr_scheduler.optimizer.param_groups[0]['lr']
-                    print('The current learning rate:', lr)
+                    lr_convtas = self.lr_scheduler.optimizer.param_groups[0]['lr']
+                    print('The current convtas learning rate:', lr_convtas)
 
             # Logging.
             loss = {}
@@ -221,6 +251,7 @@ class Solver(object):
                     save_name = 'chkpnt_'+self.model_type + '_' + self.run_name+ '.ckpt'
                 torch.save(state, save_name)
                 
+                '''
                 #log melspec
                 fig, axs = plt.subplots(2, 1, sharex=True)
                 print((x_real[0].T.detach().cpu().numpy() * 100 - 100).shape)
@@ -229,7 +260,7 @@ class Solver(object):
                     y_axis=("mel" if self.model_type == 'spmel' else "fft"),
                     x_axis="time",
                     fmin=90,
-                    fmax=7_600,
+                    fmax=7_600, 
                     sr=16_000,
                     ax=axs[0],
                 )
@@ -250,10 +281,11 @@ class Solver(object):
                 fig.colorbar(img, ax=axs)
                 wandb.log({"Train spectrograms": wandb.Image(fig)}, step=i)
                 plt.close()
-            
+                '''
             # For weights and biases.
             wandb.log({"epoch": num_iter,
-                    "lr": lr,
+                    "lr_global": lr_global,
+                    "lr_convtas": lr_convtas,
                     "g_loss_id": g_loss_id.item(),
                     "g_loss_id_psnt": g_loss_id_psnt.item(),
                     "g_loss_cd": g_loss_cd.item()})

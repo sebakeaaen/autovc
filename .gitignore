@@ -135,9 +135,6 @@ wandb
 *.ckpt
 *.pth
 
-# seb
-analysis.ipynb
-
 #wavs in root
 /*.wav
 
@@ -149,5 +146,14 @@ analysis.ipynb
 #secrets
 *.token
 
-STFT_test.ipynb
+# pickle files
 *.pkl
+
+# seb
+analysis.ipynb
+
+# nina
+modify_checkpoints.ipynb
+
+# dits
+STFT_test.ipynb

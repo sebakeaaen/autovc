@@ -16,7 +16,7 @@ class Spect(object):
 
         self.speaker_embed = config.speaker_embed
         self.model_type = config.model_type
-        self.targetDir = config.data_dir # Directory containing spectrograms
+        self.targetDir = config.main_dir # Directory containing spectrograms
         self.cutoff = 30
         self.fs = 16000
         self.order = 5
@@ -76,7 +76,7 @@ class Spect(object):
                     wav = y * 0.96 + (prng.rand(y.shape[0])-0.5)*1e-06
                     # Compute spect
                     D = self.pySTFT(wav)
-                    if self.speaker_embed: # save mel spec
+                    if self.model_type == 'spmel': # save mel spec
                         # Convert to mel and normalize
                         D_mel = np.dot(D.T, mel_basis)
                         D_db = 20 * np.log10(np.maximum(min_level, D_mel)) - 16

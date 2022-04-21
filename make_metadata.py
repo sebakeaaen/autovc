@@ -15,7 +15,8 @@ class Metadata(object):
 
         self.speaker_embed = config.speaker_embed
         self.data_dir = config.data_dir
-        self.rootDir = config.data_dir+'/'+config.model_type # Directory containing spectrograms
+        self.model_type = config.model_type
+        self.root_dir = self.data_dir+'/'+self.model_type # containing spmel or stft spects
     
     def metadata(self):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -31,8 +32,10 @@ class Metadata(object):
 
         num_uttrs = 10
         len_crop = 128
-
-        dirName, subdirList, _ = next(os.walk(self.rootDir))
+        
+        # speaker embedding is created from mel! (not stft, since checkpoint 300000-BL.pth is created for mel)
+        self.mel_dir = self.data_dir+'/'+'spmel'
+        dirName, subdirList, _ = next(os.walk(self.mel_dir))
         print('Found directory: %s' % dirName)
 
         speakers = []
@@ -62,7 +65,7 @@ class Metadata(object):
                     melsp = torch.from_numpy(tmp[np.newaxis, left:left+len_crop, :]).cuda()
                     emb = C(melsp)
                     embs.append(emb.detach().squeeze().cpu().numpy())     
-                utterances.append(np.mean(embs, axis=0))
+                utterances.append(np.mean(embs, axis=0)) # average speaker embedding
             else: # one-hot encoding
                 one_hot_encoding[i] = 1
                 utterances.append(one_hot_encoding)
@@ -73,22 +76,22 @@ class Metadata(object):
                 utterances.append(os.path.join(speaker,fileName))
             speakers.append(utterances)
     
-        with open(os.path.join(self.rootDir, 'train.pkl'), 'wb') as handle:
+        with open(os.path.join(self.root_dir, 'train.pkl'), 'wb') as handle:
             pickle.dump(speakers, handle)
 
         ######### Our modification: Reading numpy files in speaker embedding ##########
-        if self.speaker_embed:
-            with open(os.path.join(self.rootDir, 'train.pkl'), 'rb') as file:
+        if self.speaker_embed: # i.e. not neccessesary for one-hot encoding..
+            with open(os.path.join(self.root_dir, 'train.pkl'), 'rb') as file:
                 train = pickle.load(file)
 
             #create metadata for testing
-            #Format is [subject, embedding, melspec] 
+            #Format is [subject, embedding, either mel or stft spectogram, sentence numpy filename] 
+            #          [str, (256,), either (x,80) or (x,513), str]
             metadata = []
             for subject in train:
-                first_mel_spec = np.load(self.data_dir+'/spmel/'+subject[2])
+                first_mel_spec = np.load(self.root_dir+'/'+subject[2])
                 metadata.append(subject[0:2] + [first_mel_spec] + [subject[2]])
         
-            #with open(os.path.join('.', 'metadata.pkl'), 'wb') as handle:
-            with open(os.path.join(self.rootDir, 'metadata.pkl'), 'wb') as handle:
+            with open(os.path.join(self.root_dir, 'metadata.pkl'), 'wb') as handle:
                 pickle.dump(metadata, handle)
 
