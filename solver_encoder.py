@@ -1,3 +1,4 @@
+from functools import lru_cache
 from model_vc_mel import Generator 
 from model_vc_stft import GeneratorSTFT
 from model_vc_wav import GeneratorWav
@@ -31,6 +32,7 @@ class Solver(object):
         self.lr = config.lr
         self.lr_scheduler = config.lr_scheduler
         self.run_name = config.run_name
+        self.depth = config.depth
 
         # Training configurations.
         self.batch_size = config.batch_size
@@ -81,7 +83,7 @@ class Solver(object):
         elif self.model_type == 'stft':
             self.G = GeneratorSTFT(self.dim_neck, self.dim_emb, self.dim_pre, self.freq)  
         elif self.model_type == 'wav':
-            self.G = GeneratorWav(self.dim_neck, self.dim_emb, self.dim_pre, self.freq)
+            self.G = GeneratorWav(self.dim_neck, self.dim_emb, self.dim_pre, self.freq, self.depth)
         else: print('Model type not recognized')
 
         
@@ -94,7 +96,6 @@ class Solver(object):
             lr=self.lr_global)
         '''
 
-        # OBS! I guess we only want to use lr scheduler on convtas encoder and decoder or what? if so, this should be changed..
         if self.lr_scheduler == 'Cosine': 
             self.lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.g_optimizer, T_max=10000, eta_min=0)
         elif self.lr_scheduler == 'Plateau':
@@ -127,8 +128,6 @@ class Solver(object):
         lr = self.lr
 
         num_iter = 0
-        lr_global = self.lr_global
-        lr_convtas = self.lr_convtas
         
         # Print logs in specified order
         keys = ['G/loss_id','G/loss_id_psnt','G/loss_cd']
@@ -197,12 +196,12 @@ class Solver(object):
             if self.lr_scheduler is not None:
                 if self.lr_scheduler == 'Cosine': 
                     self.lr_scheduler.step()
-                    lr_convtas = self.lr_scheduler.get_last_lr()[0]
-                    print('The current convtas learning rate:', lr_convtas)
+                    lr = self.lr_scheduler.get_last_lr()[0]
+                    print('The current convtas learning rate:', lr)
                 else: # Plateau
                     self.lr_scheduler.step(g_loss) # the loss should be validation loss not training loss..
-                    lr_convtas = self.lr_scheduler.optimizer.param_groups[0]['lr']
-                    print('The current convtas learning rate:', lr_convtas)
+                    lr = self.lr_scheduler.optimizer.param_groups[0]['lr']
+                    print('The current convtas learning rate:', lr)
 
             # Logging.
             loss = {}

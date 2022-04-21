@@ -197,14 +197,14 @@ class Postnet(nn.Module):
 
 class GeneratorWav(nn.Module):
     """Generator network."""
-    def __init__(self, dim_neck, dim_emb, dim_pre, freq):
+    def __init__(self, dim_neck, dim_emb, dim_pre, freq, depth):
         super(GeneratorWav, self).__init__()
         
-        self.tasEncoder = ConvTasNetEncoder()
+        self.tasEncoder = ConvTasNetEncoder(depth)
         self.encoder = Encoder(dim_neck, dim_emb, freq)
         self.decoder = Decoder(dim_neck, dim_emb, dim_pre)
         self.postnet = Postnet()
-        self.tasDecoder = ConvTasNetDecoder()
+        self.tasDecoder = ConvTasNetDecoder(depth)
 
     def forward(self, x, c_org, c_trg):
 

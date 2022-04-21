@@ -62,6 +62,7 @@ if __name__ == '__main__':
     parser.add_argument('--model_type',type=str,default='spmel',help='input/output type: spmel, stft or wav')
     parser.add_argument('--run_name',required=True, type=str, help='name of run for wandb and checkpoints')
     parser.add_argument('--lr_scheduler',type=str,default=None,help='Cosine or Plateau')
+    parser.add_argument('--depth',type=int,default=1,help='ConvTasNet encoder and decoder depth: 1, 3 or 5 layers')
 
     # Miscellaneous.
     parser.add_argument('--log_step', type=int, default=100)
