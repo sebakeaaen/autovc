@@ -16,7 +16,7 @@ class Spect(object):
 
         self.speaker_embed = config.speaker_embed
         self.model_type = config.model_type
-        self.targetDir = config.data_dir # Directory containing spectrograms
+        self.targetDir = config.main_dir # Directory containing spectrograms
         self.cutoff = 30
         self.fs = 16000
         self.order = 5

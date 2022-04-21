@@ -16,7 +16,7 @@ def main(config):
     cudnn.benchmark = True
 
     # Generate spectrogram data from the wav files (if not already done)
-    if  os.path.exists(os.path.join(config.data_dir, config.model_type)) == False:
+    if  os.path.exists(os.path.join(config.main_dir, config.model_type)) == False:
         print('Did not find folder with spectrograms - creating...')
         sp = Spect(config)
         sp.spect()
@@ -24,7 +24,7 @@ def main(config):
         print('Found folder with spectrograms - continuing...')
 
     # Generate training metadata (if not allready done)
-    path = config.data_dir + '/' + config.model_type + '/train.pkl'
+    path = config.main_dir + '/' + config.model_type + '/train.pkl'
     if os.path.exists(path):
         print("Metadata already created - continuing...")
     else:
@@ -33,7 +33,7 @@ def main(config):
         md.metadata()
 
     # Data loader.
-    vcc_loader = get_loader(config.data_dir, config.batch_size, config.len_crop, config.model_type)
+    vcc_loader = get_loader(config.main_dir, config.batch_size, config.len_crop, config.model_type)
     
     solver = Solver(vcc_loader, config)
 
