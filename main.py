@@ -53,7 +53,7 @@ if __name__ == '__main__':
     parser.add_argument('--freq', type=int, default=32)
     
     # Training configuration.
-    parser.add_argument('--data_dir', type=str, default='/work3/dgro/VCTK-Corpus-0') # consider if train should be on all or only subset
+    parser.add_argument('--main_dir', type=str, default='/work3/dgro/VCTK-Corpus-0') # consider if train should be on all or only subset
     parser.add_argument('--batch_size', type=int, default=2, help='mini-batch size')
     parser.add_argument('--num_iters', type=int, default=10000000, help='number of total iterations')
     parser.add_argument('--len_crop', type=int, default=128, help='dataloader output sequence length')

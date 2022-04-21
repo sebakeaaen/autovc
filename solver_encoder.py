@@ -15,6 +15,8 @@ class Solver(object):
     def __init__(self, vcc_loader, config):
         """Initialize configurations."""
 
+        self.main_dir = config.main_dir
+
         # Data loader.
         self.vcc_loader = vcc_loader
 
@@ -24,7 +26,8 @@ class Solver(object):
         self.dim_emb = config.dim_emb
         self.dim_pre = config.dim_pre
         self.freq = config.freq
-        self.lr = config.learning_rate
+        self.lr_global = config.lr_global
+        self.lr_convtas = config.lr_convtans
         self.lr_scheduler = config.lr_scheduler
         self.run_name = config.run_name
 
@@ -62,7 +65,7 @@ class Solver(object):
         # Build the model and tensorboard.
         self.build_model()
 
-        # loading model checkpoints and freezing weights  (OBS! need modification!!)
+        # loading model checkpoints and freezing weights  (OBS! might need modification!!)
         if self.train_type == 'finetune': 
             print('Finetuning model')
             if self.pretrained_model == 'original':
@@ -72,14 +75,13 @@ class Solver(object):
                 for param in self.G.parameters():
                     param.requires_grad = False # freeze
             else: # self.pretrained_model == 'reproduced':
-                print('Using reproduced autovc model as pretrained model')
-                checkpoint = torch.load("model_checkpoint_mel.pth", map_location=self.device)
+                print('Using reproduced autovc model as pretrained model') # OBS! not correct checkpoint..
+                checkpoint = torch.load(self.main_dir+'/models/model_checkpoint_mel.pth', map_location=self.device)
                 self.G.load_state_dict(checkpoint["state_dict"]) # samme comment here as above
                 for param in self.G.parameters():
                     param.requires_grad = False # freeze
         else: # self.train_type == 'scratch'
             print('Training model from scratch')
-        # also need to write code such that different layers in the model are trained with different learning rates..
 
         # Set up weights and biases config
         wandb.config.update(config)
@@ -92,7 +94,11 @@ class Solver(object):
         else:
             self.G = GeneratorSTFT(self.dim_neck, self.dim_emb, self.dim_pre, self.freq)  
         
-        self.g_optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.G.parameters()), self.lr)
+        #self.g_optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.G.parameters()), self.lr)
+        self.g_optimizer = torch.optim.Adam([
+            {"params": self.G.ConvTasEncoder.parameters(), "lr": self.lr_convtas},
+            {"params": self.G.ConvTasDecoder.parameters(), "lr": self.lr_convtas}],
+            lr=self.lr_global)
 
         if self.lr_scheduler == 'Cosine': 
             self.lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.g_optimizer, T_max=10000, eta_min=0)
