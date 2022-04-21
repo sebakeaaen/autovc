@@ -25,21 +25,19 @@ def main(config):
 
     # Generate training metadata (if not allready done)
     path = config.data_dir + '/' + config.model_type + '/train.pkl'
-    #if os.path.exists(path):
-    #    print("Metadata already created - continuing...")
-    #else:
-    #    print('Metadata does not exists - creating...')
-    #    md = Metadata(config)
-    #    md.metadata()
-    md = Metadata(config)
-    md.metadata()
+    if os.path.exists(path):
+        print("Metadata already created - continuing...")
+    else:
+        print('Metadata does not exists - creating...')
+        md = Metadata(config)
+        md.metadata()
 
     # Data loader.
-    #vcc_loader = get_loader(config.data_dir, config.batch_size, config.len_crop, config.model_type)
+    vcc_loader = get_loader(config.data_dir, config.batch_size, config.len_crop, config.model_type)
     
-    #solver = Solver(vcc_loader, config)
+    solver = Solver(vcc_loader, config)
 
-    #solver.train()
+    solver.train()
     
         
 
