@@ -3,9 +3,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-class TasNetEncoder(nn.Module):
+# implement ConvTasEncoder and ConvTasDecoder modules like this (PRelu not Dilation)
+# https://github.com/JusperLee/Deep-Encoder-Decoder-Conv-TasNet
+
+class ConvTasNetEncoder(nn.Module):
     def __init__(self, enc_dim=80, sr=16000, win=2):
-        super(TasNetEncoder, self).__init__()
+        super(ConvTasNetEncoder, self).__init__()
 
         self.enc_dim = enc_dim
         
@@ -15,9 +18,9 @@ class TasNetEncoder(nn.Module):
         # input encoder
         self.encoder = nn.Conv1d(1, self.enc_dim, self.win, bias=False, stride=self.stride)
 
-class TasNetDecoder(nn.Module):
+class ConvTasNetDecoder(nn.Module):
     def __init__(self, enc_dim=80, sr=16000, win=2):
-        super(TasNetDecoder, self).__init__()
+        super(ConvTasNetDecoder, self).__init__()
 
         self.enc_dim = enc_dim
         
@@ -192,16 +195,16 @@ class Postnet(nn.Module):
         return x    
     
 
-class Generator(nn.Module):
+class GeneratorWav(nn.Module):
     """Generator network."""
     def __init__(self, dim_neck, dim_emb, dim_pre, freq):
-        super(Generator, self).__init__()
+        super(GeneratorWav, self).__init__()
         
-        self.tasEncoder = TasNetEncoder()
+        self.tasEncoder = ConvTasNetEncoder()
         self.encoder = Encoder(dim_neck, dim_emb, freq)
         self.decoder = Decoder(dim_neck, dim_emb, dim_pre)
         self.postnet = Postnet()
-        self.tasDecoder = TasNetDecoder()
+        self.tasDecoder = ConvTasNetDecoder()
 
     def forward(self, x, c_org, c_trg):
 

@@ -40,4 +40,4 @@ module load cuda/10.2
 
 module load gcc/9.2.0
 
-python main_resume.py --run_name ditte_22April19_1449_18
+python main_resume.py

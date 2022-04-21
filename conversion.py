@@ -4,7 +4,7 @@ import pickle
 import torch
 import numpy as np
 from math import ceil
-from model_vc import Generator
+from autovc.model_vc_mel import Generator
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 #id = 'ditterun_22March31_1545_40'

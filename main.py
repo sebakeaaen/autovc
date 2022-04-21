@@ -60,11 +60,9 @@ if __name__ == '__main__':
     parser.add_argument('--lr_global', type=float, default=0.00001, help='(global)learning rate for training base AutoVC model layers')
     parser.add_argument('--lr_convtas', type=float, default=0.0001, help='learning rate for training ConvTansNet Encoder and Decoder')
     parser.add_argument('--speaker_embed',type=bool, default=True, help='mel-based speaker embedding or one-hot-encoding')
-    parser.add_argument('--model_type',type=str,default='spmel',help='input/output type: spmel or stft')
+    parser.add_argument('--model_type',type=str,default='spmel',help='input/output type: spmel, stft or wav')
     parser.add_argument('--run_name',required=True, type=str, help='name of run for wandb and checkpoints')
     parser.add_argument('--lr_scheduler',type=str,default=None,help='Cosine or Plateau')
-    parser.add_argument('--pretrained_model',type=str,default='original',help='original or reproduced autovc model')
-    parser.add_argument('--train_type', type=str, default='scratch', help='finetune or scratch')
 
     # Miscellaneous.
     parser.add_argument('--log_step', type=int, default=100)

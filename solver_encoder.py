@@ -1,5 +1,6 @@
-from model_vc import Generator
-from model_stft import GeneratorSTFT
+from model_vc_mel import Generator 
+from model_vc_stft import GeneratorSTFT
+from model_vc_wav import GeneratorWav
 import torch
 import torch.nn.functional as F
 import time
@@ -27,16 +28,13 @@ class Solver(object):
         self.dim_emb = config.dim_emb
         self.dim_pre = config.dim_pre
         self.freq = config.freq
-        self.lr_global = config.lr_global
-        self.lr_convtas = config.lr_convtas
+        self.lr = config.lr
         self.lr_scheduler = config.lr_scheduler
         self.run_name = config.run_name
 
         # Training configurations.
         self.batch_size = config.batch_size
         self.num_iters = config.num_iters
-        self.pretrained_model = config.pretrained_model
-        self.train_type = config.train_type
         
         # models
         self.model_type = config.model_type
@@ -72,24 +70,6 @@ class Solver(object):
         # Build the model and tensorboard.
         self.build_model()
 
-        # loading model checkpoints and freezing weights  (OBS! might need modification!!)
-        if self.train_type == 'finetune': 
-            print('Finetuning model')
-            if self.pretrained_model == 'original':
-                print('Using original autovc model as pretrained model')
-                checkpoint = torch.load("autovc.pth", map_location=self.device)
-                self.G.load_state_dict(checkpoint["state_dict"]) # should load weights for basic autovc model and ignore that there are no pretrained weights for the conv-tasnet part 
-                for param in self.G.parameters():
-                    param.requires_grad = False # freeze
-            else: # self.pretrained_model == 'reproduced':
-                print('Using reproduced autovc model as pretrained model') # OBS! not correct checkpoint..
-                checkpoint = torch.load(self.main_dir+'/models/model_checkpoint_mel.pth', map_location=self.device)
-                self.G.load_state_dict(checkpoint["state_dict"]) # samme comment here as above
-                for param in self.G.parameters():
-                    param.requires_grad = False # freeze
-        else: # self.train_type == 'scratch'
-            print('Training model from scratch')
-
         # Set up weights and biases config
         wandb.config.update(config, allow_val_change=True)
 
@@ -98,11 +78,16 @@ class Solver(object):
         
         if self.model_type == 'spmel':
             self.G = Generator(self.dim_neck, self.dim_emb, self.dim_pre, self.freq)
-        else:
+        elif self.model_type == 'stft':
             self.G = GeneratorSTFT(self.dim_neck, self.dim_emb, self.dim_pre, self.freq)  
+        elif self.model_type == 'wav':
+            self.G = GeneratorWav(self.dim_neck, self.dim_emb, self.dim_pre, self.freq)
+        else: print('Model type not recognized')
+
         
-        self.g_optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.G.parameters()), self.lr_global)
+        self.g_optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.G.parameters()), self.lr)
         '''
+        # Using different learning rates for different model layers
         self.g_optimizer = torch.optim.Adam([
             {"params": self.G.ConvTasEncoder.parameters(), "lr": self.lr_convtas},
             {"params": self.G.ConvTasDecoder.parameters(), "lr": self.lr_convtas}],
