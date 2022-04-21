@@ -45,7 +45,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     # Model configuration.
-    parser.add_argument('--lambda_cd', type=float, default=1, help='weight for hidden code loss')
+    parser.add_argument('--lambda_cd', type=float, default=1, help='weight for hidden code loss, L_content')
+    parser.add_argument('--lambda_SISNR', type=float, default=1, help='weight for L_SISNR')
     parser.add_argument('--dim_neck', type=int, default=32)
     parser.add_argument('--dim_emb', type=int, default=256) # if one-hot encoding, change to no. of subjects
                                                             # 110 subjects in total

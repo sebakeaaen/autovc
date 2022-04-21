@@ -86,7 +86,6 @@ class Solver(object):
             self.G = GeneratorWav(self.dim_neck, self.dim_emb, self.dim_pre, self.freq, self.depth)
         else: print('Model type not recognized')
 
-        
         self.g_optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.G.parameters()), self.lr)
         '''
         # Using different learning rates for different model layers
@@ -166,27 +165,48 @@ class Solver(object):
                         
             # Identity mapping loss
             x_identic, x_identic_psnt, code_real = self.G(x_real, emb_org, emb_org)
+
+            # L_recon
             g_loss_id = F.mse_loss(x_real, x_identic.squeeze())   
 
-            if self.model_type =='spmel':
+            # L_content: Code semantic loss
+            code_reconst = self.G(x_identic_psnt, emb_org, None)
+            g_loss_cd = F.l1_loss(code_real, code_reconst)
+
+            if self.model_type == 'spmel':
+                # L_recon0
                 g_loss_id_psnt = F.mse_loss(x_real, x_identic_psnt.squeeze())   
-        
-                # Code semantic loss.
-                code_reconst = self.G(x_identic_psnt, emb_org, None)
-                g_loss_cd = F.l1_loss(code_real, code_reconst)
 
-                # Backward and optimize.
+                # L_SISNR: SI-SNR loss
+                # not used for mel model
+                g_loss_SISNR = torch.tensor(float('nan'))
+
+                # Total loss
                 g_loss = g_loss_id + g_loss_id_psnt + self.lambda_cd * g_loss_cd
-            else: 
-                # Code semantic loss.
-                code_reconst = self.G(x_identic, emb_org, None)
-                g_loss_cd = F.l1_loss(code_real, code_reconst)
+            elif self.model_type == 'stft':
+                # L_recon0
+                # set postnet loss to nan (since we found out that postnet makes no difference)
+                g_loss_id_psnt = torch.tensor(float('nan'))
 
-                # Backward and optimize.
+                # L_SISNR: SI-SNR loss
+                # not used for stft model
+                g_loss_SISNR = torch.tensor(float('nan'))
+
+                # Total loss
                 g_loss = g_loss_id + self.lambda_cd * g_loss_cd
 
-                # set postnet loss to nan
+            elif self.model_type == 'wav':
+                # L_recon
+                # set postnet loss to nan (since we found out that postnet makes no difference)
                 g_loss_id_psnt = torch.tensor(float('nan'))
+
+                # L_SISNR: SI-SNR loss
+                g_loss_SISNR = 
+
+                # Total loss
+                g_loss = g_loss_id + self.lambda_cd * g_loss_cd + self.lambda_SISNR * g_loss_SISNR
+            else: print('Model type not recognized')
+                
 
             self.reset_grad()
             g_loss.backward()
@@ -235,7 +255,6 @@ class Solver(object):
                     save_name = 'chkpnt_'+self.model_type + '_' + self.run_name+ '.ckpt'
                 torch.save(state, save_name)
                 
-                '''
                 #log melspec
                 fig, axs = plt.subplots(2, 1, sharex=True)
                 print((x_real[0].T.detach().cpu().numpy() * 100 - 100).shape)
@@ -250,9 +269,11 @@ class Solver(object):
                 )
                 axs[0].set(title="Original spectrogram")
                 axs[0].label_outer()
-                print((x_identic[0].T.detach().cpu().numpy() * 100 - 100).shape)
+
+                x_identic_plot = (x_identic[0].T.detach().cpu().numpy() * 100 - 100).squeeze()
+                print(x_identic_plot.shape)
                 img = display.specshow(
-                    x_identic[0].T.detach().cpu().numpy() * 100 - 100,
+                    x_identic_plot,
                     y_axis=("mel" if self.model_type == 'spmel' else "fft"),
                     x_axis="time",
                     fmin=90,
@@ -265,13 +286,14 @@ class Solver(object):
                 fig.colorbar(img, ax=axs)
                 wandb.log({"Train spectrograms": wandb.Image(fig)}, step=i)
                 plt.close()
-                '''
+                
             # For weights and biases.
             wandb.log({"epoch": num_iter,
                     "lr": lr,
-                    "g_loss_id": g_loss_id.item(),
-                    "g_loss_id_psnt": g_loss_id_psnt.item(),
-                    "g_loss_cd": g_loss_cd.item()})
+                    "L_recon": g_loss_id.item(),
+                    "L_recon0": g_loss_id_psnt.item(),
+                    "L_content": g_loss_cd.item(),
+                    "L_SISNR": g_loss_SISNR.item()})
 
             wandb.watch(self.G, log = None)
                 
