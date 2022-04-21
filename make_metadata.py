@@ -16,7 +16,7 @@ class Metadata(object):
         self.speaker_embed = config.speaker_embed
         self.data_dir = config.data_dir
         self.model_type = config.model_type
-        self.target_dir = self.data_dir+'/'+self.model_type # output .pkl is placed here
+        self.root_dir = self.data_dir+'/'+self.model_type # containing spmel or stft spects
     
     def metadata(self):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -76,12 +76,12 @@ class Metadata(object):
                 utterances.append(os.path.join(speaker,fileName))
             speakers.append(utterances)
     
-        with open(os.path.join(self.target_dir, 'train.pkl'), 'wb') as handle:
+        with open(os.path.join(self.root_dir, 'train.pkl'), 'wb') as handle:
             pickle.dump(speakers, handle)
 
         ######### Our modification: Reading numpy files in speaker embedding ##########
         if self.speaker_embed: # i.e. not neccessesary for one-hot encoding..
-            with open(os.path.join(self.target_dir, 'train.pkl'), 'rb') as file:
+            with open(os.path.join(self.root_dir, 'train.pkl'), 'rb') as file:
                 train = pickle.load(file)
 
             #create metadata for testing
@@ -89,9 +89,9 @@ class Metadata(object):
             #          [str, (256,), either (x,80) or (x,513), str]
             metadata = []
             for subject in train:
-                first_mel_spec = np.load(self.mel_dir+'/'+subject[2])
+                first_mel_spec = np.load(self.root_dir+'/'+subject[2])
                 metadata.append(subject[0:2] + [first_mel_spec] + [subject[2]])
         
-            with open(os.path.join(self.target_dir, 'metadata.pkl'), 'wb') as handle:
+            with open(os.path.join(self.root_dir, 'metadata.pkl'), 'wb') as handle:
                 pickle.dump(metadata, handle)
 
