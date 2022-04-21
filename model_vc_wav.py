@@ -7,28 +7,54 @@ import numpy as np
 # https://github.com/JusperLee/Deep-Encoder-Decoder-Conv-TasNet
 
 class ConvTasNetEncoder(nn.Module):
-    def __init__(self, enc_dim=80, sr=16000, win=2):
+    def __init__(self, enc_dim=80, sr=16000, kernel_size=3, depth=1):
         super(ConvTasNetEncoder, self).__init__()
 
-        self.enc_dim = enc_dim
-        
-        self.win = int(sr*win/1000)
-        self.stride = self.win // 2
+        #self.kernel_size = int(sr*kernel_size/1000) # is this neccessary?
+        stride = kernel_size // 2
+        padding = kernel_size // 2
         
         # input encoder
-        self.encoder = nn.Conv1d(1, self.enc_dim, self.win, bias=False, stride=self.stride)
+        if depth == 1:
+            self.encoder = nn.Conv1d(1, enc_dim, kernel_size, stride, padding, bias=False)
+        elif depth == 3:
+            self.encoder = nn.Sequential(
+                nn.Conv1d(1, enc_dim, kernel_size, stride, padding, bias=False),
+                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
+                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False))
+        elif depth == 5:
+            self.encoder = nn.Sequential(
+                nn.Conv1d(1, enc_dim, kernel_size, stride, padding, bias=False),
+                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
+                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
+                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
+                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False))
+        else: print('Model not defined for this depth')
 
 class ConvTasNetDecoder(nn.Module):
-    def __init__(self, enc_dim=80, sr=16000, win=2):
+    def __init__(self, enc_dim=80, sr=16000, kernel_size=3, depth=1):
         super(ConvTasNetDecoder, self).__init__()
-
-        self.enc_dim = enc_dim
         
-        self.win = int(sr*win/1000)
-        self.stride = self.win // 2
+        #self.kernel_size = int(sr*kernel_size/1000) # is this neccessary?
+        stride = kernel_size // 2
+        padding = kernel_size // 2
         
         # output decoder
-        self.decoder = nn.ConvTranspose1d(self.enc_dim, 1, self.win, bias=False, stride=self.stride)
+        if depth == 1:
+            self.decoder = nn.ConvTranspose1d(enc_dim, 1, kernel_size, stride, padding, bias=False)
+        elif depth == 3:
+            self.decoder = nn.Sequential(
+                nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
+                nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
+                nn.ConvTranspose1d(enc_dim, 1, kernel_size, stride, padding, bias=False))
+        elif depth == 5:
+            self.encoder = nn.Sequential(
+                nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
+                nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
+                nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
+                nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
+                nn.ConvTranspose1d(enc_dim, 1, kernel_size, stride, padding, bias=False))
+        else: print('Model not defined for this depth')
 
 class LinearNorm(torch.nn.Module):
     def __init__(self, in_dim, out_dim, bias=True, w_init_gain='linear'):
@@ -203,14 +229,15 @@ class GeneratorWav(nn.Module):
         self.tasEncoder = ConvTasNetEncoder(depth)
         self.encoder = Encoder(dim_neck, dim_emb, freq)
         self.decoder = Decoder(dim_neck, dim_emb, dim_pre)
-        self.postnet = Postnet()
+        #self.postnet = Postnet()
         self.tasDecoder = ConvTasNetDecoder(depth)
 
     def forward(self, x, c_org, c_trg):
 
         # pass trough conv tas encoder
-        x = self.tasEncoder(x)
-
+        for conv in self.tasEncoder(x):
+            x = F.prelu(conv(x))
+        
         # pass through AutoVC model 
         codes = self.encoder(x, c_org)
         if c_trg is None:
