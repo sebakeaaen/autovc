@@ -94,12 +94,13 @@ class Solver(object):
         else:
             self.G = GeneratorSTFT(self.dim_neck, self.dim_emb, self.dim_pre, self.freq)  
         
-        #self.g_optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.G.parameters()), self.lr)
+        self.g_optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.G.parameters()), self.lr)
+        '''
         self.g_optimizer = torch.optim.Adam([
             {"params": self.G.ConvTasEncoder.parameters(), "lr": self.lr_convtas},
             {"params": self.G.ConvTasDecoder.parameters(), "lr": self.lr_convtas}],
             lr=self.lr_global)
-
+        '''
         if self.lr_scheduler == 'Cosine': 
             self.lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.g_optimizer, T_max=10000, eta_min=0)
         elif self.lr_scheduler == 'Plateau':
