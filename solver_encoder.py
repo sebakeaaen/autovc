@@ -269,8 +269,7 @@ class Solver(object):
                 '''
             # For weights and biases.
             wandb.log({"epoch": num_iter,
-                    "lr_global": lr_global,
-                    "lr_convtas": lr_convtas,
+                    "lr": lr,
                     "g_loss_id": g_loss_id.item(),
                     "g_loss_id_psnt": g_loss_id_psnt.item(),
                     "g_loss_cd": g_loss_cd.item()})
