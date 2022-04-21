@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
+# implement ConvTasEncoder and ConvTasDecoder modules like this (PRelu not Dilation)
+# https://github.com/JusperLee/Deep-Encoder-Decoder-Conv-TasNet
 
 class LinearNorm(torch.nn.Module):
     def __init__(self, in_dim, out_dim, bias=True, w_init_gain='linear'):
