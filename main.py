@@ -59,7 +59,7 @@ if __name__ == '__main__':
     parser.add_argument('--len_crop', type=int, default=128, help='dataloader output sequence length')
     parser.add_argument('--learning_rate', type=float, default=0.0001, help='learning rate for training')
     parser.add_argument('--speaker_embed',type=bool, default=True, help='mel-based speaker embedding or one-hot-encoding')
-    parser.add_argument('--model_type',type=str,default='stft',help='input/output type: spmel or stft')
+    parser.add_argument('--model_type',type=str,default='spmel',help='input/output type: spmel or stft')
     parser.add_argument('--run_name',required=True, type=str, help='name of run for wan_db and checkpoints')
     parser.add_argument('--lr_scheduler',type=str,default='Cosine',help='Cosine or Plateau')
 

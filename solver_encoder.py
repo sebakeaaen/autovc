@@ -44,7 +44,13 @@ class Solver(object):
             api_key = file.readline()
             wandb.login(key=api_key)
 
-        wandb.init(project="DNS autovc", entity="macaroni", reinit=True, name=self.run_name)
+        self.path = 'chkpnt_' + self.model_type + '_' + self.run_name + '.ckpt'
+        self.file_exists = os.path.exists(self.path)
+
+        if self.file_exists:
+            wandb.init(project="DNS autovc", entity="macaroni", resume=True, id=self.run_name)
+        else:
+            wandb.init(project="DNS autovc", entity="macaroni", reinit=True, name=self.run_name)
 
         # Miscellaneous.
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -62,7 +68,7 @@ class Solver(object):
         self.build_model()
 
         # Set up weights and biases config
-        wandb.config.update(config)
+        wandb.config.update(config, allow_val_change=True)
 
 
     def build_model(self):
@@ -84,9 +90,8 @@ class Solver(object):
             print('No learning rate scheduler used')
             self.lr_scheduler = None
 
-        self.path = 'chkpnt_' + self.model_type + '_' + self.run_name + '.ckpt'
-        self.file_exists = os.path.exists(self.path)
         if self.file_exists:
+            print('Resuming from checkpoint.')
             checkpoint=torch.load(self.path, map_location=self.device)
             self.g_optimizer.load_state_dict(checkpoint['optimizer'])
             self.G.load_state_dict(checkpoint['state_dict'])
@@ -107,6 +112,8 @@ class Solver(object):
         data_loader = self.vcc_loader
 
         lr = self.lr
+
+        num_iter = 0
         
         # Print logs in specified order
         keys = ['G/loss_id','G/loss_id_psnt','G/loss_cd']
@@ -117,7 +124,9 @@ class Solver(object):
         for i in range(self.num_iters):
 
             if self.file_exists:
-                i = self.epoch
+                num_iter = self.epoch
+
+            num_iter += 1
 
             # =================================================================================== #
             #                             1. Preprocess input data                                #
@@ -191,22 +200,25 @@ class Solver(object):
             # =================================================================================== #
 
             # Print out training information.
-            if (i+1) % self.log_step == 0:
+            if (num_iter) % self.log_step == 0:
                 et = time.time() - start_time
                 et = str(datetime.timedelta(seconds=et))[:-7]
-                log = "Elapsed [{}], Iteration [{}/{}]".format(et, i+1, self.num_iters)
+                log = "Elapsed [{}], Iteration [{}/{}]".format(et, num_iter, self.num_iters)
                 for tag in keys:
                     log += ", {}: {:.4f}".format(tag, loss[tag])
                 print(log)
 
                 # Save model checkpoint.
                 state = {
-                    'epoch': i+1,
+                    'epoch': num_iter,
                     'state_dict': self.G.state_dict(),
                     'optimizer': self.g_optimizer.state_dict(),
                     'loss': loss
                 }
-                save_name = 'chkpnt_'+self.model_type + '_' + self.run_name+ '_resumed.ckpt'
+                if self.file_exists:
+                    save_name = 'chkpnt_'+self.model_type + '_' + self.run_name+ '_resumed.ckpt'
+                else:
+                    save_name = 'chkpnt_'+self.model_type + '_' + self.run_name+ '.ckpt'
                 torch.save(state, save_name)
                 
                 #log melspec
@@ -240,7 +252,7 @@ class Solver(object):
                 plt.close()
             
             # For weights and biases.
-            wandb.log({"epoch": i+1,
+            wandb.log({"epoch": num_iter,
                     "lr": lr,
                     "g_loss_id": g_loss_id.item(),
                     "g_loss_id_psnt": g_loss_id_psnt.item(),
