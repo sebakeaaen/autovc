@@ -237,6 +237,7 @@ class GeneratorWav(nn.Module):
         # pass trough conv tas encoder
         for conv in self.tasEncoder(x):
             x = F.prelu(conv(x))
+        # continue from here..
         
         # pass through AutoVC model 
         codes = self.encoder(x, c_org)
