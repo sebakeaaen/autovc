@@ -25,6 +25,7 @@ class Solver(object):
 
         # Model configurations.
         self.lambda_cd = config.lambda_cd
+        self.lambda_SISNR = config.lambda_SISNR
         self.dim_neck = config.dim_neck
         self.dim_emb = config.dim_emb
         self.dim_pre = config.dim_pre
@@ -161,6 +162,7 @@ class Solver(object):
             # =================================================================================== #
             
             self.G.to(self.device)
+            self.g_optimizer.to(self.device)
             self.G = self.G.train()
                         
             # Identity mapping loss
@@ -201,7 +203,7 @@ class Solver(object):
                 g_loss_id_psnt = torch.tensor(float('nan'))
 
                 # L_SISNR: SI-SNR loss
-                #g_loss_SISNR = IMPLEMNT
+                g_loss_SISNR = torch.tensor(float('nan')) # OBS! IMPLEMENT HERE
 
                 # Total loss
                 g_loss = g_loss_id + self.lambda_cd * g_loss_cd + self.lambda_SISNR * g_loss_SISNR

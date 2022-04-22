@@ -64,11 +64,16 @@ if __name__ == '__main__':
     parser.add_argument('--run_name',required=True, type=str, help='name of run for wandb and checkpoints')
     parser.add_argument('--lr_scheduler',type=str,default=None,help='Cosine or Plateau')
     parser.add_argument('--depth',type=int,default=1,help='ConvTasNet encoder and decoder depth: 1, 3 or 5 layers')
+    parser.add_argument('--resume',type=bool,default=False,help='resume training from checkpoint')
 
     # Miscellaneous.
     parser.add_argument('--log_step', type=int, default=100)
 
     config = parser.parse_args()
-    config.run_name = config.run_name + datetime.now().strftime('_%y%B%d_%H%M_%S')
+    if not config.resume:
+        config.run_name = config.run_name + datetime.now().strftime('_%y%B%d_%H%M_%S')
+    else:
+        print('Resuming training from checkpoint')
+
     print(config)
     main(config)

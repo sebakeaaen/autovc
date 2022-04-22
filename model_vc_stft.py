@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from autovc.model_vc_mel import LinearNorm, ConvNorm, Generator
+from model_vc_mel import LinearNorm, ConvNorm, Generator
 
 class GeneratorSTFT(nn.Module):
     """Generator network for STFT. Based on the pretrained model AutoVC"""
