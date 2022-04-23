@@ -40,4 +40,4 @@ module load cuda/10.2
 
 module load gcc/9.2.0
 
-python main.py --run_name reproducedAutoVC_new
+python main.py --run_name reproducedAutoVC_22April21_1156_28

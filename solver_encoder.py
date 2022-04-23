@@ -135,10 +135,7 @@ class Solver(object):
 
         lr = self.lr
 
-        if self.resume:
-            num_iter = self.epoch      
-        else:
-            num_iter = 0
+        num_iter = 0
         
         # Print logs in specified order
         keys = ['G/loss_id','G/loss_id_psnt','G/loss_cd']
