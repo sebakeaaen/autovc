@@ -1,4 +1,5 @@
 from functools import lru_cache
+from syslog import LOG_SYSLOG
 from model_vc_mel import Generator 
 from model_vc_stft import GeneratorSTFT
 from model_vc_wav import GeneratorWav
@@ -32,18 +33,20 @@ class Solver(object):
         self.freq = config.freq
         self.lr = config.lr
         self.lr_scheduler = config.lr_scheduler
-        self.run_name = config.run_name
         self.depth = config.depth
 
         # Training configurations.
         self.batch_size = config.batch_size
         self.num_iters = config.num_iters
+        self.run_name = config.run_name
+        self.resume = config.resume
+        self.run_id = config.run_id
         
         # models
         self.model_type = config.model_type
         self.speaker_embed = config.speaker_embed
-
-        self.config = config
+        
+        self.log_step = config.log_step
 
         #wandb setup
         with open('wandb.token', 'r') as file:
@@ -54,10 +57,10 @@ class Solver(object):
         self.file_exists = os.path.exists(self.path)
 
         if self.file_exists:
-            wandb.init(project="DNS autovc", entity="macaroni", resume=True, id=self.run_name)
+            wandb.init(project="DNS autovc", entity="macaroni", config=config, reinit=True, id=self.run_id, resume=True)
         else:
-            wandb.init(project="DNS autovc", entity="macaroni", reinit=True, name=self.run_name)
-
+            wandb.init(project="DNS autovc", entity="macaroni", config=config, reinit=True, name=self.run_name)
+        
         # Miscellaneous.
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         if self.device.type == 'cuda':
@@ -68,13 +71,12 @@ class Solver(object):
                             title=f"Training on {self.device}", 
                             text=f"Training on {self.device}"
                         )
-        self.log_step = config.log_step
 
         # Build the model and tensorboard.
         self.build_model()
 
         # Set up weights and biases config
-        wandb.config.update(config, allow_val_change=True)
+        #wandb.config.update(config, allow_val_change=True)
 
 
     def build_model(self):
@@ -101,24 +103,29 @@ class Solver(object):
         elif self.lr_scheduler == 'Plateau':
             self.lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.g_optimizer, 'min')
         else:
-            print('No learning rate scheduler used')
+            print('No learning rate scheduler used.')
             self.lr_scheduler = None
 
         if self.file_exists:
             print('Resuming from checkpoint.')
             checkpoint=torch.load(self.path, map_location=self.device)
-            self.g_optimizer.load_state_dict(checkpoint['optimizer'])
             self.G.load_state_dict(checkpoint['state_dict'])
+            self.g_optimizer.load_state_dict(checkpoint['optimizer'])
             self.epoch = checkpoint['epoch']
-        
+            self.loss = checkpoint['loss']
 
+            # manually moving optimizer state to GPU 
+            for state in self.g_optimizer.state.values():
+                for k, v in state.items():
+                    if isinstance(v, torch.Tensor):
+                        state[k] = v.cuda()
+        
     def reset_grad(self):
         """Reset the gradient buffers."""
         self.g_optimizer.zero_grad()
       
     
     #=====================================================================================================================================#
-    
     
                 
     def train(self):
@@ -127,7 +134,10 @@ class Solver(object):
 
         lr = self.lr
 
-        num_iter = 0
+        if self.resume:
+            num_iter = self.epoch      
+        else:
+            num_iter = 0
         
         # Print logs in specified order
         keys = ['G/loss_id','G/loss_id_psnt','G/loss_cd']
@@ -162,7 +172,6 @@ class Solver(object):
             # =================================================================================== #
             
             self.G.to(self.device)
-            self.g_optimizer.to(self.device)
             self.G = self.G.train()
                         
             # Identity mapping loss
@@ -200,7 +209,7 @@ class Solver(object):
             elif self.model_type == 'wav':
                 # L_recon
                 # set postnet loss to nan (since we found out that postnet makes no difference)
-                g_loss_id_psnt = torch.tensor(float('nan'))
+                g_loss_id_psnt = torch.tensor(float('nan')).to(self.device)
 
                 # L_SISNR: SI-SNR loss
                 g_loss_SISNR = torch.tensor(float('nan')) # OBS! IMPLEMENT HERE
@@ -209,7 +218,6 @@ class Solver(object):
                 g_loss = g_loss_id + self.lambda_cd * g_loss_cd + self.lambda_SISNR * g_loss_SISNR
             else: print('Model type not recognized')
                 
-
             self.reset_grad()
             g_loss.backward()
             self.g_optimizer.step()
@@ -251,10 +259,8 @@ class Solver(object):
                     'optimizer': self.g_optimizer.state_dict(),
                     'loss': loss
                 }
-                if self.file_exists:
-                    save_name = 'chkpnt_'+self.model_type + '_' + self.run_name+ '_resumed.ckpt'
-                else:
-                    save_name = 'chkpnt_'+self.model_type + '_' + self.run_name+ '.ckpt'
+               
+                save_name = 'chkpnt_'+self.model_type + '_' + self.run_name+ '.ckpt'
                 torch.save(state, save_name)
                 
                 #log melspec
@@ -284,7 +290,7 @@ class Solver(object):
                     ax=axs[1],
                 )
                 axs[1].set(title="Converted spectrogram")
-                fig.suptitle(f"{'git money git gud'}") #self.CHECKPOINT_DIR / Path(subject[0]).stem
+                #fig.suptitle(f"{'git money git gud'}") #self.CHECKPOINT_DIR / Path(subject[0]).stem
                 fig.colorbar(img, ax=axs)
                 wandb.log({"Train spectrograms": wandb.Image(fig)}, step=i)
                 plt.close()
@@ -292,10 +298,10 @@ class Solver(object):
             # For weights and biases.
             wandb.log({"epoch": num_iter,
                     "lr": lr,
-                    "L_recon": g_loss_id.item(),
-                    "L_recon0": g_loss_id_psnt.item(),
-                    "L_content": g_loss_cd.item(),
-                    "L_SISNR": g_loss_SISNR.item()})
+                    "g_loss_id": g_loss_id.item(), # L_recon
+                    "g_loss_id_psnt": g_loss_id_psnt.item(), # L_recon0
+                    "g_loss_cd": g_loss_cd.item(), # L_content
+                    "g_loss_SISNR": g_loss_SISNR.item()}) # L_SISNR
 
             wandb.watch(self.G, log = None)
                 
