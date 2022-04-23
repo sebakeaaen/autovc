@@ -57,6 +57,7 @@ class Solver(object):
         self.file_exists = os.path.exists(self.path)
 
         if self.file_exists:
+            print('Using checkpoint: ', self.path)
             wandb.init(project="DNS autovc", entity="macaroni", config=config, reinit=True, id=self.run_id, resume=True)
         else:
             wandb.init(project="DNS autovc", entity="macaroni", config=config, reinit=True, name=self.run_name)
