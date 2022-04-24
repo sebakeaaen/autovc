@@ -58,7 +58,6 @@ class Solver(object):
         self.file_exists = os.path.exists(self.path)
 
         if self.file_exists:
-            print('Using checkpoint: ', self.path)
             wandb.init(project="DNS autovc", entity="macaroni", config=config, reinit=True, id=self.run_id, resume=True)
         else:
             wandb.init(project="DNS autovc", entity="macaroni", config=config, reinit=True, name=self.run_name)
@@ -91,6 +90,8 @@ class Solver(object):
             self.G = GeneratorWav(self.dim_neck, self.dim_emb, self.dim_pre, self.freq, self.depth)
         else: print('Model type not recognized')
 
+        self.G.to(self.device)
+
         self.g_optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.G.parameters()), self.lr)
         '''
         # Using different learning rates for different model layers
@@ -109,18 +110,20 @@ class Solver(object):
             self.lr_scheduler = None
 
         if self.file_exists:
-            print('Resuming from checkpoint.')
-            checkpoint=torch.load(self.path, map_location=self.device)
+            print('Loading checkpoint.')
+            checkpoint = torch.load(self.path, map_location=self.device)
             self.G.load_state_dict(checkpoint['state_dict'])
             self.g_optimizer.load_state_dict(checkpoint['optimizer'])
             self.epoch = checkpoint['epoch']
             self.loss = checkpoint['loss']
 
+            '''
             # manually moving optimizer state to GPU 
             for state in self.g_optimizer.state.values():
                 for k, v in state.items():
                     if isinstance(v, torch.Tensor):
                         state[k] = v.cuda()
+            '''
         
     def reset_grad(self):
         """Reset the gradient buffers."""
@@ -170,7 +173,6 @@ class Solver(object):
             #                               2. Train the generator                                #
             # =================================================================================== #
             
-            self.G.to(self.device)
             self.G = self.G.train()
                         
             # Identity mapping loss
@@ -303,7 +305,6 @@ class Solver(object):
                     "g_loss_SISNR": g_loss_SISNR.item()}) # L_SISNR
 
             wandb.watch(self.G, log = None)
-                
 
     
     

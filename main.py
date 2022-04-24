@@ -74,8 +74,8 @@ if __name__ == '__main__':
     if not config.resume:
         config.run_name = config.run_name + datetime.now().strftime('_%y%B%d_%H%M_%S')
     else:
-        print('Resuming training from checkpoint')
-        #config.run_name = config.run_name + '_resumed'
+        print('Resuming training from checkpoint: ', 'chkpnt_' + config.model_type + '_' + config.run_name + '.ckpt')
+        # Note: if resuming training, config.run_name should be the run name of the initial run
 
     print(config)
     main(config)
