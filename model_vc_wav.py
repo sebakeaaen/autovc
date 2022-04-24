@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import numpy as np
+import torch.nn.functional as F
 
 # implement ConvTasEncoder and ConvTasDecoder modules like this (PRelu not Dilation)
 # https://github.com/JusperLee/Deep-Encoder-Decoder-Conv-TasNet
@@ -16,20 +16,33 @@ class ConvTasNetEncoder(nn.Module):
         
         # input encoder
         if depth == 1:
-            self.encoder = nn.Conv1d(1, enc_dim, kernel_size, stride, padding, bias=False)
+            self.encoder = nn.Sequential(
+                nn.Conv1d(128, 1, kernel_size, stride, padding),
+                nn.PReLU())
         elif depth == 3:
             self.encoder = nn.Sequential(
-                nn.Conv1d(1, enc_dim, kernel_size, stride, padding, bias=False),
-                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False))
+                nn.Conv1d(128, enc_dim, kernel_size, stride, padding),
+                nn.PReLU(),
+                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1),
+                nn.PReLU(),
+                nn.Conv1d(enc_dim, 1, kernel_size=3, stride=1, padding=1),
+                nn.PReLU())
         elif depth == 5:
             self.encoder = nn.Sequential(
-                nn.Conv1d(1, enc_dim, kernel_size, stride, padding, bias=False),
-                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False))
+                nn.Conv1d(128, enc_dim, kernel_size, stride, padding),
+                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1),
+                nn.PReLU(),
+                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1),
+                nn.PReLU(),
+                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1),
+                nn.PReLU(),
+                nn.Conv1d(enc_dim, 128, kernel_size=3, stride=1, padding=1),
+                nn.PReLU())
         else: print('Model not defined for this depth')
+    
+    def forward(self, x):
+        return self.encoder(x)
+
 
 class ConvTasNetDecoder(nn.Module):
     def __init__(self, enc_dim=80, sr=16000, kernel_size=3, depth=1):
@@ -41,20 +54,23 @@ class ConvTasNetDecoder(nn.Module):
         
         # output decoder
         if depth == 1:
-            self.decoder = nn.ConvTranspose1d(enc_dim, 1, kernel_size, stride, padding, bias=False)
+            self.decoder = nn.ConvTranspose1d(enc_dim, 128, kernel_size, stride, padding, bias=False)
         elif depth == 3:
             self.decoder = nn.Sequential(
                 nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
                 nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.ConvTranspose1d(enc_dim, 1, kernel_size, stride, padding, bias=False))
+                nn.ConvTranspose1d(enc_dim, 128, kernel_size, stride, padding, bias=False))
         elif depth == 5:
             self.encoder = nn.Sequential(
                 nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
                 nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
                 nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
                 nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.ConvTranspose1d(enc_dim, 1, kernel_size, stride, padding, bias=False))
+                nn.ConvTranspose1d(enc_dim, 128, kernel_size, stride, padding, bias=False))
         else: print('Model not defined for this depth')
+
+    def forward(self, x):
+        return self.decoder(x)
 
 class LinearNorm(torch.nn.Module):
     def __init__(self, in_dim, out_dim, bias=True, w_init_gain='linear'):
@@ -113,6 +129,7 @@ class Encoder(nn.Module):
         self.lstm = nn.LSTM(512, dim_neck, 2, batch_first=True, bidirectional=True)
 
     def forward(self, x, c_org):
+        print(x.shape)
         x = x.squeeze(1).transpose(2,1)
         c_org = c_org.unsqueeze(-1).expand(-1, -1, x.size(-1))
         x = torch.cat((x, c_org), dim=1)
@@ -235,9 +252,7 @@ class GeneratorWav(nn.Module):
     def forward(self, x, c_org, c_trg):
 
         # pass trough conv tas encoder
-        for conv in self.tasEncoder(x):
-            x = F.prelu(conv(x))
-        # continue from here..
+        x = self.tasEncoder(x)
         
         # pass through AutoVC model 
         codes = self.encoder(x, c_org)

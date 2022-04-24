@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from librosa import display
 import numpy as np
 import os
+from sisdr_loss import SingleSrcNegSDR
 
 
 class Solver(object):
@@ -213,7 +214,7 @@ class Solver(object):
                 g_loss_id_psnt = torch.tensor(float('nan')).to(self.device)
 
                 # L_SISNR: SI-SNR loss
-                g_loss_SISNR = torch.tensor(float('nan')) # OBS! IMPLEMENT HERE
+                g_loss_SISNR = SingleSrcNegSDR(sdr_type = 'sisdr')
 
                 # Total loss
                 g_loss = g_loss_id + self.lambda_cd * g_loss_cd + self.lambda_SISNR * g_loss_SISNR
