@@ -131,17 +131,16 @@ class Solver(object):
         """Reset the gradient buffers."""
         self.g_optimizer.zero_grad()
 
+    def model_EMA(self):
+        # compute Exponential Moving Average (EMA) weights
+        flat_params = torch.cat([param.data.view(-1) for param in self.G.parameters()], 0)
+        avg_params = self.ema * flat_params + (1-self.ema) * flat_params
 
-    def load_params(model, flattened):
+        # overwrite model weights with EMA weights
         offset = 0
-        for param in model.parameters():
-            param.data.copy_(flattened[offset:offset + param.nelement()].view(param.size()))
+        for param in self.G.parameters():
+            param.data.copy_(avg_params[offset:offset + param.nelement()].view(param.size()))
             offset += param.nelement()
-
-    def flatten_params(model):
-        return torch.cat([param.data.view(-1) for param in model.parameters()], 0)
-
-      
     
     #=====================================================================================================================================#
     
@@ -164,11 +163,9 @@ class Solver(object):
         print('Start training...')
         start_time = time.time()
 
-        avg_params = self.flatten_params(self.G)
+        self.G.train()
 
         for epoch in range(epoch_start, self.num_epochs):
-
-            epoch += 1
 
             # =================================================================================== #
             #                             1. Preprocess input data                                #
@@ -188,8 +185,6 @@ class Solver(object):
             # =================================================================================== #
             #                               2. Train the generator                                #
             # =================================================================================== #
-            
-            self.G = self.G.train()
                         
             # Identity mapping loss
             x_identic, x_identic_psnt, code_real = self.G(x_real, emb_org, emb_org)
@@ -237,10 +232,12 @@ class Solver(object):
                 
             self.reset_grad()
             g_loss.backward()
-            self.g_optimizer.step()
 
-            # exponential moving average (ema)
-            avg_params = self.ema * avg_params + (1-self.ema) * self.flatten_params(self.G)
+            # is this neccessary?
+            for param in self.G.parameters():
+                param.grad.data.clamp_(-1,1)
+            
+            self.g_optimizer.step()
 
             # Learning rate scheduler step! OBS! 
             if self.lr_scheduler is not None:
@@ -273,7 +270,7 @@ class Solver(object):
                 print(log)
 
                 # Save model checkpoint.
-                self.load_params(self.G, avg_params) # loading model with average parameters
+                self.model_EMA() # loading model with average parameters
                 state = {
                     'epoch': epoch,
                     'state_dict': self.G.state_dict(), # OBS! this is for averaged weights
@@ -319,13 +316,13 @@ class Solver(object):
                 wandb.log({"Train spectrograms": wandb.Image(fig)}, step=epoch)
                 plt.close()
                 
-            # For weights and biases.
-            wandb.log({"epoch": epoch,
-                    "lr": lr,
-                    "g_loss_id": g_loss_id.item(), # L_recon
-                    "g_loss_id_psnt": g_loss_id_psnt.item(), # L_recon0
-                    "g_loss_cd": g_loss_cd.item(), # L_content
-                    "g_loss_SISNR": g_loss_SISNR.item()}) # L_SISNR
+                # For weights and biases.
+                wandb.log({"epoch": epoch,
+                        "lr": lr,
+                        "g_loss_id": g_loss_id.item(), # L_recon
+                        "g_loss_id_psnt": g_loss_id_psnt.item(), # L_recon0
+                        "g_loss_cd": g_loss_cd.item(), # L_content
+                        "g_loss_SISNR": g_loss_SISNR.item()}) # L_SISNR
 
             wandb.watch(self.G, log = None)
 
