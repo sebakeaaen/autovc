@@ -294,7 +294,7 @@ class Solver(object):
                 axs[1].set(title="Converted spectrogram")
                 #fig.suptitle(f"{'git money git gud'}") #self.CHECKPOINT_DIR / Path(subject[0]).stem
                 fig.colorbar(img, ax=axs)
-                wandb.log({"Train spectrograms": wandb.Image(fig)}, step=i)
+                wandb.log({"Train spectrograms": wandb.Image(fig)}, step=num_iter)
                 plt.close()
                 
             # For weights and biases.

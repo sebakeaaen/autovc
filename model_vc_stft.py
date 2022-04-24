@@ -11,12 +11,6 @@ class GeneratorSTFT(nn.Module):
         
         # load pretrained model
         self.model = Generator(dim_neck,dim_emb,dim_pre,freq)
-        checkpoint = torch.load('autovc.ckpt', map_location='cpu')
-        self.model.load_state_dict(checkpoint['model'])
-
-        # freze all weights
-        for param in self.model.parameters():
-            param.requires_grad = False
 
         # modify en- and decoder to STFT sizes
         self.model.encoder.convolutions[0][0] = ConvNorm(513+dim_emb, 512, kernel_size = 5, stride = 1, padding = 2)
