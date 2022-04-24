@@ -57,7 +57,6 @@ class Solver(object):
         self.file_exists = os.path.exists(self.path)
 
         if self.file_exists:
-            print('Using checkpoint: ', self.path)
             wandb.init(project="DNS autovc", entity="macaroni", config=config, reinit=True, id=self.run_id, resume=True)
         else:
             wandb.init(project="DNS autovc", entity="macaroni", config=config, reinit=True, name=self.run_name)
@@ -110,7 +109,7 @@ class Solver(object):
             self.lr_scheduler = None
 
         if self.file_exists:
-            print('Resuming from checkpoint.')
+            print('Loading checkpoint.')
             checkpoint = torch.load(self.path, map_location=self.device)
             self.G.load_state_dict(checkpoint['state_dict'])
             self.g_optimizer.load_state_dict(checkpoint['optimizer'])
