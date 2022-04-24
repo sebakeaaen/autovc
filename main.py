@@ -58,19 +58,20 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=2, help='mini-batch size')
     parser.add_argument('--num_iters', type=int, default=10000000, help='number of total iterations')
     parser.add_argument('--len_crop', type=int, default=128, help='dataloader output sequence length')
-    parser.add_argument('--lr', type=float, default=0.00001, help='learning rate for training')
+    parser.add_argument('--lr', type=float, default=0.0001, help='learning rate for training')
     parser.add_argument('--speaker_embed',type=bool, default=True, help='mel-based speaker embedding or one-hot-encoding')
     parser.add_argument('--model_type',type=str,default='spmel',help='input/output type: spmel, stft or wav')
     parser.add_argument('--run_name',required=True, type=str, help='name of run for wandb and checkpoints')
     parser.add_argument('--lr_scheduler',type=str,default=None,help='Cosine or Plateau')
     parser.add_argument('--depth',type=int,default=1,help='ConvTasNet encoder and decoder depth: 1, 3 or 5 layers')
     parser.add_argument('--resume',type=bool,default=True, help='resume training from checkpoint')
-    parser.add_argument('--run_id', type=str, default='2s7rsn3z', help='wandb run id (see run overview in wandb: run path, e.g. 1g7y0hr9)')
+    parser.add_argument('--run_id', type=str, default='1t6as4v6', help='wandb run id (see run overview in wandb: run path, e.g. 1g7y0hr9)')
 
     # Miscellaneous.
     parser.add_argument('--log_step', type=int, default=100)
 
     config = parser.parse_args()
+
     if not config.resume:
         config.run_name = config.run_name + datetime.now().strftime('_%y%B%d_%H%M_%S')
     else:

@@ -14,9 +14,9 @@ class Metadata(object):
         """Initialize configurations."""
 
         self.speaker_embed = config.speaker_embed
-        self.data_dir = config.data_dir
+        self.main_dir = config.main_dir
         self.model_type = config.model_type
-        self.root_dir = self.data_dir+'/'+self.model_type # containing spmel or stft spects
+        self.root_dir = self.main_dir+'/'+self.model_type # containing spmel or stft spects
     
     def metadata(self):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -34,7 +34,7 @@ class Metadata(object):
         len_crop = 128
         
         # speaker embedding is created from mel! (not stft, since checkpoint 300000-BL.pth is created for mel)
-        self.mel_dir = self.data_dir+'/'+'spmel'
+        self.mel_dir = self.main_dir+'/'+'spmel'
         dirName, subdirList, _ = next(os.walk(self.mel_dir))
         print('Found directory: %s' % dirName)
 
