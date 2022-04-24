@@ -116,7 +116,8 @@ class Solver(object):
             self.epoch = checkpoint['epoch']
             self.loss = checkpoint['loss']
 
-            '''
+            ''' 
+            # not neccessary
             # manually moving optimizer state to GPU 
             for state in self.g_optimizer.state.values():
                 for k, v in state.items():
