@@ -85,11 +85,11 @@ class Metadata(object):
                 train = pickle.load(file)
 
             #create metadata for testing
-            #Format is [subject, embedding, either mel or stft spectogram, sentence numpy filename] 
+            #Format is [subject, embedding, either mel spect, stft spect or raw wav, sentence numpy filename] 
             #          [str, (256,), either (x,80) or (x,513), str]
             metadata = []
             for subject in train:
-                first_mel_spec = np.load(self.root_dir+'/'+subject[2])
+                first_mel_spec = np.load(self.root_dir+'/'+subject[2]) # loading numpy file (not)
                 metadata.append(subject[0:2] + [first_mel_spec] + [subject[2]])
         
             with open(os.path.join(self.root_dir, 'metadata.pkl'), 'wb') as handle:

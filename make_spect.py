@@ -69,7 +69,9 @@ class Spect(object):
             for fileName in sorted(fileList):
                 if (mic in fileName) == False: # only use the specified mic
                     # Read audio file
-                    x, fs = sf.read(os.path.join(dirName,subdir,fileName))
+                    #x, fs = sf.read(os.path.join(dirName,subdir,fileName))
+                    x_fs = librosa.load(os.path.join(dirName,subdir,fileName), sr=self.fs), 
+                    x = x_fs[0][0]
                     # Remove drifting noise
                     y = signal.filtfilt(b, a, x)
                     # Add a little random noise for model roubstness

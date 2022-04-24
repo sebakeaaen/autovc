@@ -38,7 +38,8 @@ class Solver(object):
 
         # Training configurations.
         self.batch_size = config.batch_size
-        self.num_iters = config.num_iters
+        self.num_epochs = config.num_epochs
+        self.ema = config.ema
         self.run_name = config.run_name
         self.resume = config.resume
         self.run_id = config.run_id
@@ -129,6 +130,17 @@ class Solver(object):
     def reset_grad(self):
         """Reset the gradient buffers."""
         self.g_optimizer.zero_grad()
+
+
+    def load_params(model, flattened):
+        offset = 0
+        for param in model.parameters():
+            param.data.copy_(flattened[offset:offset + param.nelement()].view(param.size()))
+            offset += param.nelement()
+
+    def flatten_params(model):
+        return torch.cat([param.data.view(-1) for param in model.parameters()], 0)
+
       
     
     #=====================================================================================================================================#
@@ -139,21 +151,24 @@ class Solver(object):
         data_loader = self.vcc_loader
 
         lr = self.lr
-
-        num_iter = 0
         
         # Print logs in specified order
         keys = ['G/loss_id','G/loss_id_psnt','G/loss_cd']
 
+        if self.file_exists:
+            epoch_start = self.epoch
+        else:
+            epoch_start = 0
+
         # Start training.
         print('Start training...')
         start_time = time.time()
-        for i in range(self.num_iters):
 
-            if self.file_exists:
-                num_iter = self.epoch
+        avg_params = self.flatten_params(self.G)
 
-            num_iter += 1
+        for epoch in range(epoch_start, self.num_epochs):
+
+            epoch += 1
 
             # =================================================================================== #
             #                             1. Preprocess input data                                #
@@ -224,6 +239,9 @@ class Solver(object):
             g_loss.backward()
             self.g_optimizer.step()
 
+            # exponential moving average (ema)
+            avg_params = self.ema * avg_params + (1-self.ema) * self.flatten_params(self.G)
+
             # Learning rate scheduler step! OBS! 
             if self.lr_scheduler is not None:
                 if self.lr_scheduler == 'Cosine': 
@@ -246,28 +264,32 @@ class Solver(object):
             # =================================================================================== #
 
             # Print out training information.
-            if (num_iter) % self.log_step == 0:
+            if (epoch) % self.log_step == 0:
                 et = time.time() - start_time
                 et = str(datetime.timedelta(seconds=et))[:-7]
-                log = "Elapsed [{}], Iteration [{}/{}]".format(et, num_iter, self.num_iters)
+                log = "Elapsed [{}], Iteration [{}/{}]".format(et, epoch, self.num_epochs)
                 for tag in keys:
                     log += ", {}: {:.4f}".format(tag, loss[tag])
                 print(log)
 
                 # Save model checkpoint.
+                self.load_params(self.G, avg_params) # loading model with average parameters
                 state = {
-                    'epoch': num_iter,
-                    'state_dict': self.G.state_dict(),
+                    'epoch': epoch,
+                    'state_dict': self.G.state_dict(), # OBS! this is for averaged weights
                     'optimizer': self.g_optimizer.state_dict(),
                     'loss': loss
                 }
-               
-                save_name = 'chkpnt_'+self.model_type + '_' + self.run_name+ '.ckpt'
+    
+                if self.file_exists:
+                    save_name = 'chkpnt_'+self.model_type + '_' + self.run_name+ '_resumed.ckpt'
+                else:
+                    save_name = 'chkpnt_'+self.model_type + '_' + self.run_name+ '.ckpt'
+
                 torch.save(state, save_name)
                 
                 #log melspec
                 fig, axs = plt.subplots(2, 1, sharex=True)
-                print((x_real[0].T.detach().cpu().numpy() * 100 - 100).shape)
                 display.specshow(
                     x_real[0].T.detach().cpu().numpy() * 100 - 100,
                     y_axis=("mel" if self.model_type == 'spmel' else "fft"),
@@ -281,7 +303,7 @@ class Solver(object):
                 axs[0].label_outer()
 
                 x_identic_plot = (x_identic[0].T.detach().cpu().numpy() * 100 - 100).squeeze()
-                print(x_identic_plot.shape)
+
                 img = display.specshow(
                     x_identic_plot,
                     y_axis=("mel" if self.model_type == 'spmel' else "fft"),
@@ -294,11 +316,11 @@ class Solver(object):
                 axs[1].set(title="Converted spectrogram")
                 #fig.suptitle(f"{'git money git gud'}") #self.CHECKPOINT_DIR / Path(subject[0]).stem
                 fig.colorbar(img, ax=axs)
-                wandb.log({"Train spectrograms": wandb.Image(fig)}, step=i)
+                wandb.log({"Train spectrograms": wandb.Image(fig)}, step=epoch)
                 plt.close()
                 
             # For weights and biases.
-            wandb.log({"epoch": num_iter,
+            wandb.log({"epoch": epoch,
                     "lr": lr,
                     "g_loss_id": g_loss_id.item(), # L_recon
                     "g_loss_id_psnt": g_loss_id_psnt.item(), # L_recon0
