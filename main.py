@@ -75,7 +75,6 @@ if __name__ == '__main__':
         config.run_name = config.run_name + datetime.now().strftime('_%y%B%d_%H%M_%S')
     else:
         print('Resuming training from checkpoint')
-        #config.run_name = config.run_name + '_resumed'
 
     print(config)
     main(config)
