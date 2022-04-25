@@ -40,7 +40,7 @@ class Utterances(data.Dataset):
         for i in range(len(self.train_dataset)):
             for j in range(len(self.train_dataset[i])):
                 if j > 0:
-                    self.train_dataset[i][j] = torch.from_numpy(self.train_dataset[i][j]).to(self.device)
+                    self.train_dataset[i][j] = torch.from_numpy(self.train_dataset[i][j])#.to(self.device)
                     
         self.num_tokens = len(self.train_dataset)
         
