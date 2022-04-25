@@ -38,7 +38,8 @@ class Solver(object):
 
         # Training configurations.
         self.batch_size = config.batch_size
-        self.num_iters = config.num_iters
+        self.num_epochs = config.num_epochs
+        self.ema = config.ema
         self.run_name = config.run_name
         self.resume = config.resume
         self.run_id = config.run_id
@@ -117,7 +118,8 @@ class Solver(object):
             self.epoch = checkpoint['epoch']
             self.loss = checkpoint['loss']
 
-            '''
+            ''' 
+            # not neccessary
             # manually moving optimizer state to GPU 
             for state in self.g_optimizer.state.values():
                 for k, v in state.items():
@@ -128,7 +130,17 @@ class Solver(object):
     def reset_grad(self):
         """Reset the gradient buffers."""
         self.g_optimizer.zero_grad()
-      
+
+    def model_EMA(self):
+        # compute Exponential Moving Average (EMA) weights
+        flat_params = torch.cat([param.data.view(-1) for param in self.G.parameters()], 0)
+        avg_params = self.ema * flat_params + (1-self.ema) * flat_params
+
+        # overwrite model weights with EMA weights
+        offset = 0
+        for param in self.G.parameters():
+            param.data.copy_(avg_params[offset:offset + param.nelement()].view(param.size()))
+            offset += param.nelement()
     
     #=====================================================================================================================================#
     
@@ -138,21 +150,22 @@ class Solver(object):
         data_loader = self.vcc_loader
 
         lr = self.lr
-
-        num_iter = 0
         
         # Print logs in specified order
         keys = ['G/loss_id','G/loss_id_psnt','G/loss_cd']
 
+        if self.file_exists:
+            epoch_start = self.epoch
+        else:
+            epoch_start = 0
+
         # Start training.
         print('Start training...')
         start_time = time.time()
-        for i in range(self.num_iters):
 
-            if self.file_exists:
-                num_iter = self.epoch
+        self.G.train()
 
-            num_iter += 1
+        for epoch in range(epoch_start, self.num_epochs):
 
             # =================================================================================== #
             #                             1. Preprocess input data                                #
@@ -172,8 +185,6 @@ class Solver(object):
             # =================================================================================== #
             #                               2. Train the generator                                #
             # =================================================================================== #
-            
-            self.G = self.G.train()
                         
             # Identity mapping loss
             x_identic, x_identic_psnt, code_real = self.G(x_real, emb_org, emb_org)
@@ -221,6 +232,11 @@ class Solver(object):
                 
             self.reset_grad()
             g_loss.backward()
+
+            # is this neccessary?
+            for param in self.G.parameters():
+                param.grad.data.clamp_(-1,1)
+            
             self.g_optimizer.step()
 
             # Learning rate scheduler step! OBS! 
@@ -245,28 +261,32 @@ class Solver(object):
             # =================================================================================== #
 
             # Print out training information.
-            if (num_iter) % self.log_step == 0:
+            if (epoch) % self.log_step == 0:
                 et = time.time() - start_time
                 et = str(datetime.timedelta(seconds=et))[:-7]
-                log = "Elapsed [{}], Iteration [{}/{}]".format(et, num_iter, self.num_iters)
+                log = "Elapsed [{}], Iteration [{}/{}]".format(et, epoch, self.num_epochs)
                 for tag in keys:
                     log += ", {}: {:.4f}".format(tag, loss[tag])
                 print(log)
 
                 # Save model checkpoint.
+                self.model_EMA() # loading model with average parameters
                 state = {
-                    'epoch': num_iter,
-                    'state_dict': self.G.state_dict(),
+                    'epoch': epoch,
+                    'state_dict': self.G.state_dict(), # OBS! this is for averaged weights
                     'optimizer': self.g_optimizer.state_dict(),
                     'loss': loss
                 }
-               
-                save_name = 'chkpnt_'+self.model_type + '_' + self.run_name+ '.ckpt'
+    
+                if self.file_exists:
+                    save_name = 'chkpnt_'+self.model_type + '_' + self.run_name+ '_resumed.ckpt'
+                else:
+                    save_name = 'chkpnt_'+self.model_type + '_' + self.run_name+ '.ckpt'
+
                 torch.save(state, save_name)
                 
                 #log melspec
                 fig, axs = plt.subplots(2, 1, sharex=True)
-                print((x_real[0].T.detach().cpu().numpy() * 100 - 100).shape)
                 display.specshow(
                     x_real[0].T.detach().cpu().numpy() * 100 - 100,
                     y_axis=("mel" if self.model_type == 'spmel' else "fft"),
@@ -280,7 +300,7 @@ class Solver(object):
                 axs[0].label_outer()
 
                 x_identic_plot = (x_identic[0].T.detach().cpu().numpy() * 100 - 100).squeeze()
-                print(x_identic_plot.shape)
+
                 img = display.specshow(
                     x_identic_plot,
                     y_axis=("mel" if self.model_type == 'spmel' else "fft"),
@@ -293,16 +313,16 @@ class Solver(object):
                 axs[1].set(title="Converted spectrogram")
                 #fig.suptitle(f"{'git money git gud'}") #self.CHECKPOINT_DIR / Path(subject[0]).stem
                 fig.colorbar(img, ax=axs)
-                wandb.log({"Train spectrograms": wandb.Image(fig)}, step=i)
+                wandb.log({"Train spectrograms": wandb.Image(fig)}, step=epoch)
                 plt.close()
                 
-            # For weights and biases.
-            wandb.log({"epoch": num_iter,
-                    "lr": lr,
-                    "g_loss_id": g_loss_id.item(), # L_recon
-                    "g_loss_id_psnt": g_loss_id_psnt.item(), # L_recon0
-                    "g_loss_cd": g_loss_cd.item(), # L_content
-                    "g_loss_SISNR": g_loss_SISNR.item()}) # L_SISNR
+                # For weights and biases.
+                wandb.log({"epoch": epoch,
+                        "lr": lr,
+                        "g_loss_id": g_loss_id.item(), # L_recon
+                        "g_loss_id_psnt": g_loss_id_psnt.item(), # L_recon0
+                        "g_loss_cd": g_loss_cd.item(), # L_content
+                        "g_loss_SISNR": g_loss_SISNR.item()}) # L_SISNR
 
             wandb.watch(self.G, log = None)
 
