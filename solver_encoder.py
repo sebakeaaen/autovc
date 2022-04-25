@@ -156,6 +156,7 @@ class Solver(object):
 
         if self.file_exists:
             epoch_start = self.epoch
+            print('Continue from epoch: ', epoch)
         else:
             epoch_start = 0
 
