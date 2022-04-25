@@ -156,7 +156,7 @@ class Solver(object):
 
         if self.file_exists:
             epoch_start = self.epoch
-            print('Continue from epoch: ', epoch)
+            print('Continue from epoch: ', epoch_start)
         else:
             epoch_start = 0
 
@@ -325,7 +325,7 @@ class Solver(object):
                         "g_loss_cd": g_loss_cd.item(), # L_content
                         "g_loss_SISNR": g_loss_SISNR.item()}) # L_SISNR
 
-            wandb.watch(self.G, log = None)
+                wandb.watch(self.G, log = None)
 
     
     

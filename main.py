@@ -65,8 +65,8 @@ if __name__ == '__main__':
     parser.add_argument('--lr_scheduler',type=str,default=None,help='Cosine or Plateau')
     parser.add_argument('--depth',type=int,default=1,help='ConvTasNet encoder and decoder depth: 1, 3 or 5 layers')
     parser.add_argument('--ema', type=float, default=0.9999, help='Exponential moving average weight')
-    parser.add_argument('--resume',type=bool,default=True, help='resume training from checkpoint')
-    parser.add_argument('--run_id', type=str, default='3fidpvz2', help='wandb run id (see run overview in wandb: run path, e.g. 1g7y0hr9)')
+    parser.add_argument('--resume',type=bool,default=False, help='resume training from checkpoint')
+    parser.add_argument('--run_id', type=str, default=None, help='wandb run id (see run overview in wandb: run path, e.g. 1g7y0hr9)')
 
     # Miscellaneous.
     parser.add_argument('--log_step', type=int, default=100)
