@@ -17,7 +17,7 @@ class ConvTasNetEncoder(nn.Module):
         # input encoder
         if depth == 1:
             self.encoder = nn.Sequential(
-                nn.Conv1d(128, 1, kernel_size, stride, padding),
+                nn.Conv1d(128, 128, kernel_size, stride, padding),
                 nn.PReLU())
         elif depth == 3:
             self.encoder = nn.Sequential(
@@ -25,7 +25,7 @@ class ConvTasNetEncoder(nn.Module):
                 nn.PReLU(),
                 nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1),
                 nn.PReLU(),
-                nn.Conv1d(enc_dim, 1, kernel_size=3, stride=1, padding=1),
+                nn.Conv1d(enc_dim, 128, kernel_size=3, stride=1, padding=1),
                 nn.PReLU())
         elif depth == 5:
             self.encoder = nn.Sequential(
