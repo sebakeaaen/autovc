@@ -7,6 +7,7 @@ from scipy.signal import get_window
 from librosa.filters import mel
 import librosa
 from numpy.random import RandomState
+from sklearn.preprocessing import RobustScaler
 
 
 class Spect(object):
@@ -43,7 +44,7 @@ class Spect(object):
                                                 strides=strides)
     
         fft_window = get_window('hann', self.fft_length, fftbins=True)
-        result = np.abs(np.fft.rfft(fft_window * result, n=self.fft_length).T) # inverse function is irfft 
+        result = np.abs(np.fft.rfft(fft_window * result, n=self.fft_length).T) #inverse function is irfft 
         return result
     
     def spect(self):
@@ -56,12 +57,11 @@ class Spect(object):
         saveDir = self.targetDir + '/' + self.model_type
         # specify if mic1 or mic2 should be used (mic2 is default)
         mic = 'mic1'
-
         dirName, subdirList, _ = next(os.walk(rootDir))
-        #print('Found directory: %s' % dirName)
+        print('Found directory: %s' % dirName)
 
         for subdir in sorted(subdirList):
-        #print(subdir)
+            print(subdir)
             if not os.path.exists(os.path.join(saveDir, subdir)):
                 os.makedirs(os.path.join(saveDir, subdir))
             _,_, fileList = next(os.walk(os.path.join(dirName,subdir)))
@@ -69,22 +69,28 @@ class Spect(object):
             for fileName in sorted(fileList):
                 if (mic in fileName) == False: # only use the specified mic
                     # Read audio file
-                    #x, fs = sf.read(os.path.join(dirName,subdir,fileName))
-                    x_fs = librosa.load(os.path.join(dirName,subdir,fileName), sr=self.fs), 
-                    x = x_fs[0][0]
+                    x, fs = librosa.load(os.path.join(dirName,subdir,fileName), sr=self.fs)
                     # Remove drifting noise
                     y = signal.filtfilt(b, a, x)
                     # Add a little random noise for model roubstness
                     wav = y * 0.96 + (prng.rand(y.shape[0])-0.5)*1e-06
-                    # Compute spect
-                    D = self.pySTFT(wav)
+
+
                     if self.model_type == 'spmel': # save mel spec
+                        # Compute spect
+                        D = self.pySTFT(wav)
                         # Convert to mel and normalize
                         D_mel = np.dot(D.T, mel_basis)
                         D_db = 20 * np.log10(np.maximum(min_level, D_mel)) - 16
                         S = np.clip((D_db + 100) / 100, 0, 1)  
-                    else: # save stft
-                        S = D
+                    if self.model_type == 'stft': # save stft
+                        D = self.pySTFT(wav)
+                        D_db = 20 * np.log10(min_level) - 16
+                        S = np.clip((D_db + 100) / 100, 0, 1)  
+                    elif self.model_type == 'wav':
+                        S = RobustScaler(quantile_range=(5.0, 95.0)).fit_transform(wav.reshape(-1, 1))
+                    else:
+                        raise ValueError('You entered a wrong model_type homie')
                     # save spect
                     np.save(os.path.join(saveDir, subdir, fileName[:-5]), # -5 if flac files, -4 if wav files
                         S.astype(np.float32), allow_pickle=False)
