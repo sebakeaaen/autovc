@@ -156,6 +156,7 @@ class Solver(object):
 
         if self.file_exists:
             epoch_start = self.epoch
+            print('Continue from epoch: ', epoch_start)
         else:
             epoch_start = 0
 
@@ -285,36 +286,37 @@ class Solver(object):
 
                 torch.save(state, save_name)
                 
-                #log melspec
-                fig, axs = plt.subplots(2, 1, sharex=True)
-                display.specshow(
-                    x_real[0].T.detach().cpu().numpy() * 100 - 100,
-                    y_axis=("mel" if self.model_type == 'spmel' else "fft"),
-                    x_axis="time",
-                    fmin=90,
-                    fmax=7_600, 
-                    sr=16_000,
-                    ax=axs[0],
-                )
-                axs[0].set(title="Original spectrogram")
-                axs[0].label_outer()
+                if self.model_type in ('stft', 'spmel'):
+                    #log melspec
+                    fig, axs = plt.subplots(2, 1, sharex=True)
+                    display.specshow(
+                        x_real[0].T.detach().cpu().numpy() * 100 - 100,
+                        y_axis=("mel" if self.model_type == 'spmel' else "fft"),
+                        x_axis="time",
+                        fmin=90,
+                        fmax=7_600, 
+                        sr=16_000,
+                        ax=axs[0],
+                    )
+                    axs[0].set(title="Original spectrogram")
+                    axs[0].label_outer()
 
-                x_identic_plot = (x_identic[0].T.detach().cpu().numpy() * 100 - 100).squeeze()
+                    x_identic_plot = (x_identic[0].T.detach().cpu().numpy() * 100 - 100).squeeze()
 
-                img = display.specshow(
-                    x_identic_plot,
-                    y_axis=("mel" if self.model_type == 'spmel' else "fft"),
-                    x_axis="time",
-                    fmin=90,
-                    fmax=7_600,
-                    sr=16_000,
-                    ax=axs[1],
-                )
-                axs[1].set(title="Converted spectrogram")
-                #fig.suptitle(f"{'git money git gud'}") #self.CHECKPOINT_DIR / Path(subject[0]).stem
-                fig.colorbar(img, ax=axs)
-                wandb.log({"Train spectrograms": wandb.Image(fig)}, step=epoch)
-                plt.close()
+                    img = display.specshow(
+                        x_identic_plot,
+                        y_axis=("mel" if self.model_type == 'spmel' else "fft"),
+                        x_axis="time",
+                        fmin=90,
+                        fmax=7_600,
+                        sr=16_000,
+                        ax=axs[1],
+                    )
+                    axs[1].set(title="Converted spectrogram")
+                    #fig.suptitle(f"{'git money git gud'}") #self.CHECKPOINT_DIR / Path(subject[0]).stem
+                    fig.colorbar(img, ax=axs)
+                    wandb.log({"Train spectrograms": wandb.Image(fig)}, step=epoch)
+                    plt.close()
                 
                 # For weights and biases.
                 wandb.log({"epoch": epoch,
@@ -324,7 +326,7 @@ class Solver(object):
                         "g_loss_cd": g_loss_cd.item(), # L_content
                         "g_loss_SISNR": g_loss_SISNR.item()}) # L_SISNR
 
-            wandb.watch(self.G, log = None)
+                wandb.watch(self.G, log = None)
 
     
     

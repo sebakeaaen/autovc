@@ -17,26 +17,26 @@ class ConvTasNetEncoder(nn.Module):
         # input encoder
         if depth == 1:
             self.encoder = nn.Sequential(
-                nn.Conv1d(128, 1, kernel_size, stride, padding),
+                nn.Conv1d(33536, enc_dim, kernel_size, stride, padding),
                 nn.PReLU())
         elif depth == 3:
             self.encoder = nn.Sequential(
-                nn.Conv1d(128, enc_dim, kernel_size, stride, padding),
+                nn.Conv1d(33536, enc_dim, kernel_size, stride, padding),
                 nn.PReLU(),
                 nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1),
                 nn.PReLU(),
-                nn.Conv1d(enc_dim, 1, kernel_size=3, stride=1, padding=1),
+                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1),
                 nn.PReLU())
         elif depth == 5:
             self.encoder = nn.Sequential(
-                nn.Conv1d(128, enc_dim, kernel_size, stride, padding),
+                nn.Conv1d(33536, enc_dim, kernel_size, stride, padding),
                 nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1),
                 nn.PReLU(),
                 nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1),
                 nn.PReLU(),
                 nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1),
                 nn.PReLU(),
-                nn.Conv1d(enc_dim, 128, kernel_size=3, stride=1, padding=1),
+                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1),
                 nn.PReLU())
         else: print('Model not defined for this depth')
     
@@ -129,13 +129,13 @@ class Encoder(nn.Module):
         self.lstm = nn.LSTM(512, dim_neck, 2, batch_first=True, bidirectional=True)
 
     def forward(self, x, c_org):
-        x = x.squeeze(1).transpose(2,1)
+        #x = x.squeeze(1).transpose(2,1)
         c_org = c_org.unsqueeze(-1).expand(-1, -1, x.size(-1))
         x = torch.cat((x, c_org), dim=1)
         
         for conv in self.convolutions:
             x = F.relu(conv(x))
-        x = x.transpose(1, 2)
+        #x = x.transpose(1, 2)
         
         self.lstm.flatten_parameters()
         outputs, _ = self.lstm(x)
@@ -177,11 +177,11 @@ class Decoder(nn.Module):
         
         #self.lstm1.flatten_parameters()
         x, _ = self.lstm1(x)
-        x = x.transpose(1, 2)
+        #x = x.transpose(1, 2)
         
         for conv in self.convolutions:
             x = F.relu(conv(x))
-        x = x.transpose(1, 2)
+        #x = x.transpose(1, 2)
         
         outputs, _ = self.lstm2(x)
         

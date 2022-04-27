@@ -40,4 +40,8 @@ module load cuda/10.2
 
 module load gcc/9.2.0
 
-python main.py --run_name reproducedAutoVC_new_22April23_1444_43_resumed
+<<<<<<< HEAD
+python main.py --run_name 'sebtest2' --model_type 'wav' --batch_size 2 --len_crop 33536 --batch_size 1
+=======
+python main.py --run_name 'reproducedAutoVC_new_22April23_1444_43_resumed_resumed' --resume True --run_id 3fidpvz2
+>>>>>>> 26a45685a3b756701a723173865ef2389ef93112

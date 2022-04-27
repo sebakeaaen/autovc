@@ -17,6 +17,12 @@ class Metadata(object):
         self.main_dir = config.main_dir
         self.model_type = config.model_type
         self.root_dir = self.main_dir+'/'+self.model_type # containing spmel or stft spects
+        self.num_uttrs = 10
+        if self.model_type in ('spmel', 'stft'):
+            self.len_crop = 128
+        if self.model_type == 'wav':
+            self.len_crop = 128#33536
+
     
     def metadata(self):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -30,8 +36,8 @@ class Metadata(object):
                 new_state_dict[new_key] = val
             C.load_state_dict(new_state_dict)
 
-        num_uttrs = 10
-        len_crop = 128
+        num_uttrs = self.num_uttrs
+        len_crop = self.len_crop
         
         # speaker embedding is created from mel! (not stft, since checkpoint 300000-BL.pth is created for mel)
         self.mel_dir = self.main_dir+'/'+'spmel'
@@ -94,4 +100,6 @@ class Metadata(object):
         
             with open(os.path.join(self.root_dir, 'metadata.pkl'), 'wb') as handle:
                 pickle.dump(metadata, handle)
+
+                
 
