@@ -179,19 +179,14 @@ class Generator(nn.Module):
         self.postnet = Postnet()
 
     def forward(self, x, c_org, c_trg):
-        print('X shape')
-        print(x.shape)
         codes = self.encoder(x, c_org)
         if c_trg is None:
             return torch.cat(codes, dim=-1)
         
         tmp = []
-        print('code shapes')
         for code in codes:
             print(code.shape)
             tmp.append(code.unsqueeze(1).expand(-1,int(x.size(1)/len(codes)),-1))
-        print('tmp')
-        print(tmp)
         code_exp = torch.cat(tmp, dim=1)
         
         encoder_outputs = torch.cat((code_exp, c_trg.unsqueeze(1).expand(-1,x.size(1),-1)), dim=-1)

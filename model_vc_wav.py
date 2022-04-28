@@ -114,6 +114,7 @@ class GeneratorWav(nn.Module):
 
         if c_trg is None:
             return torch.cat(codes, dim=-1)
+            
         tmp = []
         for code in codes:
             tmp.append(code.unsqueeze(1).expand(-1,int(x.size(1)/len(codes)),-1))

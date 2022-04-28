@@ -48,7 +48,6 @@ class Metadata(object):
         i = 0 # for the one-hot encoding
 
         for speaker in sorted(subdirList):
-            one_hot_encoding = torch.zeros(len(subdirList))
             print('Processing speaker: %s' % speaker)
             utterances = []
             utterances.append(speaker)

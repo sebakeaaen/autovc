@@ -60,7 +60,7 @@ if __name__ == '__main__':
     parser.add_argument('--len_crop', type=int, default=128, help='dataloader output sequence length')
     parser.add_argument('--lr', type=float, default=0.0001, help='learning rate for training')
     parser.add_argument('--speaker_embed',type=bool, default=True, help='mel-based speaker embedding or one-hot-encoding')
-    parser.add_argument('--model_type',type=str,default='spmel',help='input/output type: spmel, stft or wav')
+    parser.add_argument('--model_type',type=str,default='wav',help='input/output type: spmel, stft or wav')
     parser.add_argument('--run_name',required=True, type=str, help='name of run for wandb and checkpoints')
     parser.add_argument('--lr_scheduler',type=str,default=None,help='Cosine or Plateau')
     parser.add_argument('--depth',type=int,default=1,help='ConvTasNet encoder and decoder depth: 1, 3 or 5 layers')

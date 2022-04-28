@@ -10,10 +10,36 @@ import datetime
 import wandb
 import matplotlib.pyplot as plt
 from librosa import display
+from librosa.feature import melspectrogram
+from scipy.signal import get_window
+from librosa.filters import mel
 import numpy as np
 import os
 from sisdr_loss import SingleSrcNegSDR
 
+def pySTFT(self, x):
+    
+    x = np.pad(x, int(self.fft_length//2), mode='reflect')
+
+    noverlap = self.fft_length - self.hop_length
+    shape = x.shape[:-1]+((x.shape[-1]-noverlap)//self.hop_length, self.fft_length)
+    strides = x.strides[:-1]+(self.hop_length*x.strides[-1], x.strides[-1])
+    result = np.lib.stride_tricks.as_strided(x, shape=shape,
+                                            strides=strides)
+
+    fft_window = get_window('hann', self.fft_length, fftbins=True)
+    result = np.abs(np.fft.rfft(fft_window * result, n=self.fft_length).T) #inverse function is irfft 
+    return result
+
+def plot_mel(x):
+            mel_basis = mel(16000, 1024, fmin=90, fmax=7600, n_mels=80).T
+            D = pySTFT(x).T
+            D_mel = np.dot(D, mel_basis)
+            min_level = np.exp(-100 / 20 * np.log(10))
+            D_db = 20 * np.log10(np.maximum(min_level, D_mel)) - 16
+            S = np.clip((D_db + 100) / 100, 0, 1)
+            S_temp = (S[0]).T
+            return S_temp
 
 class Solver(object):
 
@@ -170,6 +196,8 @@ class Solver(object):
 
         for epoch in range(epoch_start, self.num_epochs):
 
+            epoch = epoch + 1
+
             # =================================================================================== #
             #                             1. Preprocess input data                                #
             # =================================================================================== #
@@ -189,31 +217,16 @@ class Solver(object):
             #                               2. Train the generator                                #
             # =================================================================================== #
                         
-            # Identity mapping loss
-            if self.model_type == 'wav':
-                x_convtas, x_identic, gen_outputs, code_real = self.G(x_real, emb_org, emb_org)
-
-                # L_recon
-                g_loss_id = F.mse_loss(x_real.squeeze(), x_identic.squeeze())
-
-                # loss for generator
-                g_loss_gen = F.mse_loss(x_convtas.squeeze(), gen_outputs.squeeze()) # loss for data generated specs
-                
-                # L_content: Code semantic loss
-                code_reconst = self.G(x_identic, emb_org, None)
-            else:
+            if self.model_type == 'spmel':
                 x_identic, x_identic_psnt, code_real = self.G(x_real, emb_org, emb_org)
                 # L_recon
-                g_loss_id = F.mse_loss(x_real.squeeze(), x_identic.squeeze())   
+                g_loss_id = F.mse_loss(x_real.squeeze(), x_identic.squeeze()) 
 
-                # L_content: Code semantic loss
-                code_reconst = self.G(x_identic_psnt, emb_org, None)
-            
-            g_loss_cd = F.l1_loss(code_real, code_reconst)
-
-            if self.model_type == 'spmel':
                 # L_recon0
-                g_loss_id_psnt = F.mse_loss(x_real, x_identic_psnt.squeeze())   
+                g_loss_id_psnt = F.mse_loss(x_real, x_identic_psnt.squeeze())  
+
+                code_reconst = self.G(x_identic_psnt, emb_org, None) 
+                g_loss_cd = F.l1_loss(code_real, code_reconst)
 
                 # L_SISNR: SI-SNR loss
                 # not used for mel model
@@ -221,7 +234,15 @@ class Solver(object):
 
                 # Total loss
                 g_loss = g_loss_id + g_loss_id_psnt + self.lambda_cd * g_loss_cd
+
             elif self.model_type == 'stft':
+                x_identic, code_real = self.G(x_real, emb_org, emb_org)
+                # L_recon
+                g_loss_id = F.mse_loss(x_real.squeeze(), x_identic.squeeze()) 
+
+                code_reconst = self.G(x_identic, emb_org, None) 
+                g_loss_cd = F.l1_loss(code_real, code_reconst)
+
                 # L_recon0
                 # set postnet loss to nan (since we found out that postnet makes no difference)
                 g_loss_id_psnt = torch.tensor(float('nan'))
@@ -234,7 +255,18 @@ class Solver(object):
                 g_loss = g_loss_id + self.lambda_cd * g_loss_cd
 
             elif self.model_type == 'wav':
+                x_convtas, x_identic, gen_outputs, code_real = self.G(x_real, emb_org, emb_org)
+
                 # L_recon
+                g_loss_id = F.mse_loss(x_real.squeeze(), x_identic.squeeze())
+
+                # loss for generator
+                g_loss_gen = F.mse_loss(x_convtas.squeeze(), gen_outputs.squeeze()) # loss for data generated specs
+                
+                # L_content: Code semantic loss
+                code_reconst = self.G(x_identic, emb_org, None)
+                g_loss_cd = F.l1_loss(code_real, code_reconst)
+
                 # set postnet loss to nan (since we found out that postnet makes no difference)
                 g_loss_id_psnt = torch.tensor(float('nan')).to(self.device)
 
@@ -255,8 +287,8 @@ class Solver(object):
             g_loss.backward()
 
             # is this neccessary?
-            for param in self.G.parameters():
-                param.grad.data.clamp_(-1,1)
+            #for param in self.G.parameters():
+            #    param.grad.data.clamp_(-1,1)
             
             self.g_optimizer.step()
 
@@ -282,7 +314,7 @@ class Solver(object):
             # =================================================================================== #
 
             # Print out training information.
-            if (epoch+1) % self.log_step == 0:
+            if (epoch) % self.log_step == 0:
                 et = time.time() - start_time
                 et = str(datetime.timedelta(seconds=et))[:-7]
                 log = "Elapsed [{}], Iteration [{}/{}]".format(et, epoch, self.num_epochs)
@@ -337,7 +369,38 @@ class Solver(object):
                     fig.colorbar(img, ax=axs)
                     wandb.log({"Train spectrograms": wandb.Image(fig)}, step=epoch)
                     plt.close()
-                
+                else:
+                    mel_spec_real = plot_mel(x_real[0].detach().cpu().numpy())
+                    mel_spec_identic = plot_mel(x_identic[0].detach().cpu().numpy())
+                                        #log melspec
+                    fig, axs = plt.subplots(2, 1, sharex=True)
+                    display.specshow(
+                        mel_spec_real,
+                        y_axis=("mel"),
+                        x_axis="time",
+                        fmin=90,
+                        fmax=7_600, 
+                        sr=16_000,
+                        ax=axs[0],
+                    )
+                    axs[0].set(title="Original spectrogram")
+                    axs[0].label_outer()
+
+                    img = display.specshow(
+                        mel_spec_identic,
+                        y_axis=("mel" if self.model_type == 'spmel' else "fft"),
+                        x_axis="time",
+                        fmin=90,
+                        fmax=7_600,
+                        sr=16_000,
+                        ax=axs[1],
+                    )
+                    axs[1].set(title="Converted spectrogram")
+                    #fig.suptitle(f"{'git money git gud'}") #self.CHECKPOINT_DIR / Path(subject[0]).stem
+                    fig.colorbar(img, ax=axs)
+                    wandb.log({"Train spectrograms": wandb.Image(fig)}, step=epoch)
+                    plt.close()
+
                 # For weights and biases.
                 wandb.log({"epoch": epoch,
                         "lr": lr,

@@ -38,4 +38,4 @@ module load cuda/10.2
 
 module load gcc/9.2.0
 
-python main.py --run_name ditte_waw --model_type wav --batch_size 2 --len_crop 33536
+python main.py --run_name ditte_wav --len_crop 33536
