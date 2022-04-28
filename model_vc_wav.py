@@ -71,7 +71,7 @@ class ConvTasNetDecoder(nn.Module):
         # output decoder
         if depth == 1:
             self.decoder = nn.Sequential(
-                nn.Conv1d(80, 1, kernel_size=3, stride=1, padding=1, bias=False))
+                nn.ConvTranspose1d(80, 1, kernel_size=3, stride=1, padding=1, bias=False))
         elif depth == 3:
             self.decoder = nn.Sequential(
                 nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
@@ -102,8 +102,6 @@ class GeneratorWav(nn.Module):
     def forward(self, x, c_org, c_trg):
         x = x.permute(0,2,1)
 
-        print(x.shape)
-
         # pass trough conv tas encoder
         x = self.tasEncoder(x)
 
@@ -126,7 +124,6 @@ class GeneratorWav(nn.Module):
         gen_outputs = self.decoder(encoder_outputs)
 
         # pass through conv tas decoder
-        output = self.tasDecoder(gen_outputs.permute(0,2,1))
-        
+        output = self.tasDecoder(gen_outputs.permute(0,2,1)) 
         
         return x_convTas, output.permute(0,2,1), gen_outputs, torch.cat(codes, dim=-1)

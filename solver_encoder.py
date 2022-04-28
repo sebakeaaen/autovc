@@ -193,14 +193,14 @@ class Solver(object):
             if self.model_type == 'wav':
                 x_convtas, x_identic, gen_outputs, code_real = self.G(x_real, emb_org, emb_org)
 
+                # L_recon
                 g_loss_id = F.mse_loss(x_real.squeeze(), x_identic.squeeze())
 
                 # loss for generator
                 g_loss_gen = F.mse_loss(x_convtas.squeeze(), gen_outputs.squeeze()) # loss for data generated specs
                 
-                print(gen_outputs.shape)
-                # codes skal kun gennem den originale autoVC generator
-                code_reconst = self.G(gen_outputs.permute(0,2,1), emb_org, None)
+                # L_content: Code semantic loss
+                code_reconst = self.G(x_identic, emb_org, None)
             else:
                 x_identic, x_identic_psnt, code_real = self.G(x_real, emb_org, emb_org)
                 # L_recon
@@ -210,17 +210,6 @@ class Solver(object):
                 code_reconst = self.G(x_identic_psnt, emb_org, None)
             
             g_loss_cd = F.l1_loss(code_real, code_reconst)
-
-            # print('x_real shape')
-            # print(x_real.shape)
-            # print('x_identic shape')
-            # print(x_identic.shape)
-            # print('gen_outputs shape:')
-            # print(gen_outputs.shape)
-            # print('code_real shape')
-            # print(code_real.shape)
-            # print('emb_org shape')
-            # print(emb_org.shape)
 
             if self.model_type == 'spmel':
                 # L_recon0
@@ -250,14 +239,13 @@ class Solver(object):
                 g_loss_id_psnt = torch.tensor(float('nan')).to(self.device)
 
                 # L_SISNR: SI-SNR loss
-                #g_loss_SISNR = SingleSrcNegSDR(sdr_type = 'sisdr')
-                tmp = torch.dot(x_identic, x_real, dim=1, keepdim=True)
-                s_target = torch.mul(tmp, x_real, dim=1, keepdim=True)
-                e_noise = torch.sub(x_identic - x_real, dim = 1, keepdim=True)
-                tmp_s = torch.dot(s_target,s_target, dim = 1, keepdim=True)
-                tmp_e = torch.dot(e_noise, e_noise, dim = 1, keepdim=True)
-                ratio = torch.divide(tmp_s,tmp_e, dim=1, keepdim=True)
-                g_loss_SISNR = torch.log10(torch.float_power(ratio, dim = 1, keepdim=True),dim=1, keepdim=True)
+                dot = torch.sum(x_identic * x_real, dim=1, keepdim=True)
+                s_target_energy = torch.sum(x_real ** 2, dim=1, keepdim=True)
+                scaled_target = dot * x_real / s_target_energy
+                e_noise = x_identic - x_real
+                losses = torch.sum(scaled_target ** 2, dim=1) / (torch.sum(e_noise ** 2, dim=1))
+                losses = (10 * torch.log10(losses))
+                g_loss_SISNR = -(losses.mean())
 
                 # Total loss
                 g_loss = g_loss_id + self.lambda_SISNR * g_loss_SISNR + g_loss_gen + self.lambda_cd * g_loss_cd
@@ -294,7 +282,7 @@ class Solver(object):
             # =================================================================================== #
 
             # Print out training information.
-            if (epoch) % self.log_step == 0:
+            if (epoch+1) % self.log_step == 0:
                 et = time.time() - start_time
                 et = str(datetime.timedelta(seconds=et))[:-7]
                 log = "Elapsed [{}], Iteration [{}/{}]".format(et, epoch, self.num_epochs)
