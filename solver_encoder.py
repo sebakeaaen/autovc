@@ -161,10 +161,12 @@ class Solver(object):
             epoch_start = 0
 
         # Start training.
-        print('Start training...')
+        print('Starting training...')
         start_time = time.time()
 
         self.G.train()
+
+        wandb.watch(self.G, log = None)
 
         for epoch in range(epoch_start, self.num_epochs):
 
@@ -188,10 +190,21 @@ class Solver(object):
             # =================================================================================== #
                         
             # Identity mapping loss
-            x_identic, x_identic_psnt, code_real = self.G(x_real, emb_org, emb_org)
+            x_identic, x_identic_psnt, code_real = self.G(x_real, emb_org, emb_org) # for wav, 
+                                            #x_identic_psnt is the output from the generator
+            print('x_real shape')
+            print(x_real.shape)
+            print('x_identic shape')
+            print(x_identic.shape)
+            print('x_identic_psnt shape:')
+            print(x_identic_psnt.shape)
+            print('code_real shape')
+            print(code_real.shape)
+            print('emb_org shape')
+            print(emb_org.shape)
 
             # L_recon
-            g_loss_id = F.mse_loss(x_real, x_identic.squeeze())   
+            g_loss_id = F.mse_loss(x_real.squeeze(), x_identic.squeeze())   
 
             # L_content: Code semantic loss
             code_reconst = self.G(x_identic_psnt, emb_org, None)
@@ -325,8 +338,6 @@ class Solver(object):
                         "g_loss_id_psnt": g_loss_id_psnt.item(), # L_recon0
                         "g_loss_cd": g_loss_cd.item(), # L_content
                         "g_loss_SISNR": g_loss_SISNR.item()}) # L_SISNR
-
-                wandb.watch(self.G, log = None)
 
     
     

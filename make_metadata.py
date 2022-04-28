@@ -40,7 +40,7 @@ class Metadata(object):
         len_crop = self.len_crop
         
         # speaker embedding is created from mel! (not stft, since checkpoint 300000-BL.pth is created for mel)
-        self.mel_dir = self.main_dir+'/'+'spmel'
+        self.mel_dir = self.main_dir+'/spmel'
         dirName, subdirList, _ = next(os.walk(self.mel_dir))
         print('Found directory: %s' % dirName)
 
@@ -58,25 +58,20 @@ class Metadata(object):
             assert len(fileList) >= num_uttrs
             idx_uttrs = np.random.choice(len(fileList), size=num_uttrs, replace=False)
             embs = []
-            if self.speaker_embed:
-                for i in range(num_uttrs):
-                    tmp = np.load(os.path.join(dirName, speaker, fileList[idx_uttrs[i]]))
-                    candidates = np.delete(np.arange(len(fileList)), idx_uttrs)
-                    # choose another utterance if the current one is too short
-                    while tmp.shape[0] < len_crop:
-                        idx_alt = np.random.choice(candidates)
-                        tmp = np.load(os.path.join(dirName, speaker, fileList[idx_alt]))
-                        candidates = np.delete(candidates, np.argwhere(candidates==idx_alt))
-                    left = np.random.randint(0, tmp.shape[0]-len_crop)
-                    melsp = torch.from_numpy(tmp[np.newaxis, left:left+len_crop, :]).cuda()
-                    emb = C(melsp)
-                    embs.append(emb.detach().squeeze().cpu().numpy())     
-                utterances.append(np.mean(embs, axis=0)) # average speaker embedding
-            else: # one-hot encoding
-                one_hot_encoding[i] = 1
-                utterances.append(one_hot_encoding)
-                i += 1
-    
+            for i in range(num_uttrs):
+                tmp = np.load(os.path.join(dirName, speaker, fileList[idx_uttrs[i]]))
+                candidates = np.delete(np.arange(len(fileList)), idx_uttrs)
+                # choose another utterance if the current one is too short
+                while tmp.shape[0] < len_crop:
+                    idx_alt = np.random.choice(candidates)
+                    tmp = np.load(os.path.join(dirName, speaker, fileList[idx_alt]))
+                    candidates = np.delete(candidates, np.argwhere(candidates==idx_alt))
+                left = np.random.randint(0, tmp.shape[0]-len_crop)
+                melsp = torch.from_numpy(tmp[np.newaxis, left:left+len_crop, :]).cuda()
+                emb = C(melsp)
+                embs.append(emb.detach().squeeze().cpu().numpy())     
+            utterances.append(np.mean(embs, axis=0)) # average speaker embedding
+
             # create file list
             for fileName in sorted(fileList):
                 utterances.append(os.path.join(speaker,fileName))

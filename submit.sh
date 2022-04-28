@@ -12,8 +12,6 @@
 #BSUB -R "select[gpu32gb]"
 ### -- specify that we need 2GB of memory per core/slot -- 
 #BSUB -R "rusage[mem=32GB]"
-### -- specify that we want the job to get killed if it exceeds 3 GB per core/slot -- 
-#BSUB -M 128GB
 ### -- set walltime limit: hh:mm -- 
 #BSUB -W 24:00
 #BSUB -gpu "num=1"
@@ -40,8 +38,4 @@ module load cuda/10.2
 
 module load gcc/9.2.0
 
-<<<<<<< HEAD
-python main.py --run_name 'sebtest2' --model_type 'wav' --batch_size 2 --len_crop 33536 --batch_size 1
-=======
-python main.py --run_name 'reproducedAutoVC_new_22April23_1444_43_resumed_resumed' --resume True --run_id 3fidpvz2
->>>>>>> 26a45685a3b756701a723173865ef2389ef93112
+python main.py --run_name ditte_waw --model_type wav --batch_size 2 --len_crop 33536

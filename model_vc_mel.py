@@ -49,7 +49,7 @@ class Encoder(nn.Module):
         convolutions = []
         for i in range(3):
             conv_layer = nn.Sequential(
-                ConvNorm(80+dim_emb if i==0 else 512, #for mel specs
+                ConvNorm(80+dim_emb if i==0 else 512,
                          512,
                          kernel_size=5, stride=1,
                          padding=2,
@@ -103,7 +103,7 @@ class Decoder(nn.Module):
         
         self.lstm2 = nn.LSTM(dim_pre, 1024, 2, batch_first=True)
         
-        self.linear_projection = LinearNorm(1024, 80) # for mel specs
+        self.linear_projection = LinearNorm(1024, 80)
 
     def forward(self, x):
         
@@ -133,7 +133,7 @@ class Postnet(nn.Module):
 
         self.convolutions.append(
             nn.Sequential(
-                ConvNorm(80, 512, # for mel specs
+                ConvNorm(80, 512,
                          kernel_size=5, stride=1,
                          padding=2,
                          dilation=1, w_init_gain='tanh'),
@@ -153,11 +153,11 @@ class Postnet(nn.Module):
 
         self.convolutions.append(
             nn.Sequential(
-                ConvNorm(512, 80, # for mel specs
+                ConvNorm(512, 80,
                          kernel_size=5, stride=1,
                          padding=2,
                          dilation=1, w_init_gain='linear'),
-                nn.BatchNorm1d(80)) # for mel specs
+                nn.BatchNorm1d(80))
             )
 
     def forward(self, x):
@@ -179,14 +179,19 @@ class Generator(nn.Module):
         self.postnet = Postnet()
 
     def forward(self, x, c_org, c_trg):
-                
+        print('X shape')
+        print(x.shape)
         codes = self.encoder(x, c_org)
         if c_trg is None:
             return torch.cat(codes, dim=-1)
         
         tmp = []
+        print('code shapes')
         for code in codes:
+            print(code.shape)
             tmp.append(code.unsqueeze(1).expand(-1,int(x.size(1)/len(codes)),-1))
+        print('tmp')
+        print(tmp)
         code_exp = torch.cat(tmp, dim=1)
         
         encoder_outputs = torch.cat((code_exp, c_trg.unsqueeze(1).expand(-1,x.size(1),-1)), dim=-1)
