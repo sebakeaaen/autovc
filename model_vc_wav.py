@@ -33,7 +33,8 @@ class ConvTasNetEncoder(nn.Module):
         
         # input encoder
         if depth == 1:
-            self.encoder = Conv1DBlock()
+            self.encoder = nn.Sequential(nn.Conv1d(1, enc_dim, kernel_size, stride, padding),
+                nn.PReLU())
         elif depth == 3:
             self.encoder = nn.Sequential(
                 nn.Conv1d(1, enc_dim, kernel_size, stride, padding),
@@ -69,19 +70,20 @@ class ConvTasNetDecoder(nn.Module):
         
         # output decoder
         if depth == 1:
-            self.decoder = Conv1DBlock(in_channel=80, out_channel=1)
+            self.decoder = nn.Sequential(
+                nn.Conv1d(80, 1, kernel_size=3, stride=1, padding=1, bias=False))
         elif depth == 3:
             self.decoder = nn.Sequential(
                 nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
                 nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.ConvTranspose1d(enc_dim, 128, kernel_size, stride, padding, bias=False))
+                nn.ConvTranspose1d(enc_dim, 1, kernel_size, stride, padding, bias=False))
         elif depth == 5:
             self.encoder = nn.Sequential(
                 nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
                 nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
                 nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
                 nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.ConvTranspose1d(enc_dim, 128, kernel_size, stride, padding, bias=False))
+                nn.ConvTranspose1d(enc_dim, 1, kernel_size, stride, padding, bias=False))
         else: print('Model not defined for this depth')
 
     def forward(self, x):
@@ -95,27 +97,25 @@ class GeneratorWav(nn.Module):
         self.tasEncoder = Conv1DBlock()
         self.encoder = Encoder(dim_neck, dim_emb, freq)
         self.decoder = Decoder(dim_neck, dim_emb, dim_pre)
-        #self.postnet = Postnet()
         self.tasDecoder = ConvTasNetDecoder(depth)
 
     def forward(self, x, c_org, c_trg):
         x = x.permute(0,2,1)
 
+        print(x.shape)
+
         # pass trough conv tas encoder
         x = self.tasEncoder(x)
-        x_convTas = x.clone()
 
         x = x.permute(0,2,1)
 
-        print('X dim after convtasnet')
-        print(x.shape)
+        x_convTas = x.clone()
 
         # pass through AutoVC model 
         codes = self.encoder(x, c_org)
 
         if c_trg is None:
             return torch.cat(codes, dim=-1)
-        
         tmp = []
         for code in codes:
             tmp.append(code.unsqueeze(1).expand(-1,int(x.size(1)/len(codes)),-1))
@@ -125,13 +125,8 @@ class GeneratorWav(nn.Module):
         
         gen_outputs = self.decoder(encoder_outputs)
 
-        # concatenate output from convtas encoder and autovc encoder
-        decoderInput = x_convTas+(gen_outputs.permute(0,2,1)) #torch.cat((x_convTas, mel_outputs), dim = 1)
-
         # pass through conv tas decoder
-        output = self.tasDecoder(decoderInput)
+        output = self.tasDecoder(gen_outputs.permute(0,2,1))
         
-        #mel_outputs = mel_outputs.unsqueeze(1)
-        #mel_outputs_postnet = mel_outputs_postnet.unsqueeze(1)
         
-        return output.permute(0,2,1), gen_outputs, torch.cat(codes, dim=-1)
+        return x_convTas, output.permute(0,2,1), gen_outputs, torch.cat(codes, dim=-1)

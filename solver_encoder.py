@@ -190,25 +190,37 @@ class Solver(object):
             # =================================================================================== #
                         
             # Identity mapping loss
-            x_identic, x_identic_psnt, code_real = self.G(x_real, emb_org, emb_org) # for wav, 
-                                            #x_identic_psnt is the output from the generator
-            print('x_real shape')
-            print(x_real.shape)
-            print('x_identic shape')
-            print(x_identic.shape)
-            print('x_identic_psnt shape:')
-            print(x_identic_psnt.shape)
-            print('code_real shape')
-            print(code_real.shape)
-            print('emb_org shape')
-            print(emb_org.shape)
+            if self.model_type == 'wav':
+                x_convtas, x_identic, gen_outputs, code_real = self.G(x_real, emb_org, emb_org)
 
-            # L_recon
-            g_loss_id = F.mse_loss(x_real.squeeze(), x_identic.squeeze())   
+                g_loss_id = F.mse_loss(x_real.squeeze(), x_identic.squeeze())
 
-            # L_content: Code semantic loss
-            code_reconst = self.G(x_identic_psnt, emb_org, None)
+                # loss for generator
+                g_loss_gen = F.mse_loss(x_convtas.squeeze(), gen_outputs.squeeze()) # loss for data generated specs
+                
+                print(gen_outputs.shape)
+                # codes skal kun gennem den originale autoVC generator
+                code_reconst = self.G(gen_outputs.permute(0,2,1), emb_org, None)
+            else:
+                x_identic, x_identic_psnt, code_real = self.G(x_real, emb_org, emb_org)
+                # L_recon
+                g_loss_id = F.mse_loss(x_real.squeeze(), x_identic.squeeze())   
+
+                # L_content: Code semantic loss
+                code_reconst = self.G(x_identic_psnt, emb_org, None)
+            
             g_loss_cd = F.l1_loss(code_real, code_reconst)
+
+            # print('x_real shape')
+            # print(x_real.shape)
+            # print('x_identic shape')
+            # print(x_identic.shape)
+            # print('gen_outputs shape:')
+            # print(gen_outputs.shape)
+            # print('code_real shape')
+            # print(code_real.shape)
+            # print('emb_org shape')
+            # print(emb_org.shape)
 
             if self.model_type == 'spmel':
                 # L_recon0
@@ -238,10 +250,17 @@ class Solver(object):
                 g_loss_id_psnt = torch.tensor(float('nan')).to(self.device)
 
                 # L_SISNR: SI-SNR loss
-                g_loss_SISNR = SingleSrcNegSDR(sdr_type = 'sisdr')
+                #g_loss_SISNR = SingleSrcNegSDR(sdr_type = 'sisdr')
+                tmp = torch.dot(x_identic, x_real, dim=1, keepdim=True)
+                s_target = torch.mul(tmp, x_real, dim=1, keepdim=True)
+                e_noise = torch.sub(x_identic - x_real, dim = 1, keepdim=True)
+                tmp_s = torch.dot(s_target,s_target, dim = 1, keepdim=True)
+                tmp_e = torch.dot(e_noise, e_noise, dim = 1, keepdim=True)
+                ratio = torch.divide(tmp_s,tmp_e, dim=1, keepdim=True)
+                g_loss_SISNR = torch.log10(torch.float_power(ratio, dim = 1, keepdim=True),dim=1, keepdim=True)
 
                 # Total loss
-                g_loss = g_loss_id + self.lambda_cd * g_loss_cd + self.lambda_SISNR * g_loss_SISNR
+                g_loss = g_loss_id + self.lambda_SISNR * g_loss_SISNR + g_loss_gen + self.lambda_cd * g_loss_cd
             else: print('Model type not recognized')
                 
             self.reset_grad()
