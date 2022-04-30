@@ -22,7 +22,7 @@ class Metadata(object):
         #we use spmel for metadata speaker encoding regardless
         self.len_crop = 128
 
-        self.subject_conversions = [
+        self.subject_conversions = [ #((original speaker, sentence), target speaker)
                         (('p226','001'),'p226'),
                         (('p226','003'),'p336')
                         ]
@@ -34,13 +34,12 @@ class Metadata(object):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         C = D_VECTOR(dim_input=80, dim_cell=768, dim_emb=256).eval().to(device)
         
-        if self.speaker_embed:
-            c_checkpoint = torch.load('3000000-BL.ckpt',map_location=device)
-            new_state_dict = OrderedDict()
-            for key, val in c_checkpoint['model_b'].items():
-                new_key = key[7:]
-                new_state_dict[new_key] = val
-            C.load_state_dict(new_state_dict)
+        c_checkpoint = torch.load('3000000-BL.ckpt',map_location=device)
+        new_state_dict = OrderedDict()
+        for key, val in c_checkpoint['model_b'].items():
+            new_key = key[7:]
+            new_state_dict[new_key] = val
+        C.load_state_dict(new_state_dict)
 
         num_uttrs = self.num_uttrs
         len_crop = self.len_crop
@@ -52,7 +51,6 @@ class Metadata(object):
 
         speakers = []
         for speaker in sorted(subdirList):
-            one_hot_encoding = torch.zeros(len(subdirList))
             print('Processing speaker: %s' % speaker)
             utterances = []
             utterances.append(speaker)
@@ -95,7 +93,7 @@ class Metadata(object):
 
         with open(os.path.join(self.root_dir, 'metadata.log'), 'w') as log:
             log_ref_int = 0
-            metadata = [] #format is list of conversion metadata [log ref int(eventual filename) [from subject.sentence, from embedding, from sound input], [to subject, to embedding]
+            metadata = [] #format is list of conversion metadata [log ref int(eventual filename), [from subject.sentence, from embedding, from sound input], [to subject, to embedding]
             for conversion in self.subject_conversions:
                 log.write('CONVERSION FILENAME: '+str(log_ref_int) +' ' + '#'*40 + '\n\n')
                 with open(os.path.join(self.main_dir,'txt',conversion[0][0],conversion[0][0] + '_' + conversion[0][1]+'.txt',), 'r') as sentence_file:

@@ -11,8 +11,7 @@ from librosa import display
 print('Started conversion')
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-#id = 'ditterun_22March31_1545_40'
-id = 'autovc'
+id = 'autovc' #checkpoint
 model_type = 'spmel'
 main_dir = '/work3/dgro/VCTK-Corpus-0'
 
@@ -22,13 +21,11 @@ def pad_seq(x, base=32):
     assert len_pad >= 0
     return np.pad(x, ((0,len_pad),(0,0)), 'constant'), len_pad
 
-#G = Generator(32,256,512,32).eval().to(device) # if speaker embedding
-G = Generator(32,256,512,32).eval().to(device) # if one-hot encoding (110 is the number of subjects)
+G = Generator(32,256,512,32).eval().to(device)
 
 g_checkpoint = torch.load(main_dir+'/models/'+id+'.ckpt', map_location=device)
 G.load_state_dict(g_checkpoint['model']) #state_dict for our models
 
-#metadata = pickle.load(open('/work3/dgro/VCTK-Corpus-0/' + model_type +'/metadata.pkl', "rb"))
 metadata = pickle.load(open(main_dir + '/' + model_type +'/' + 'metadata.pkl', "rb"))
 
 spect_vc = []
