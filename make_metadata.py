@@ -7,6 +7,7 @@ from model_bl import D_VECTOR
 from collections import OrderedDict
 import numpy as np
 import torch
+import pandas as pd
 
 class Metadata(object):
 
@@ -18,11 +19,16 @@ class Metadata(object):
         self.model_type = config.model_type
         self.root_dir = self.main_dir+'/'+self.model_type # containing spmel or stft spects
         self.num_uttrs = 10
-        if self.model_type in ('spmel', 'stft'):
-            self.len_crop = 128
-        if self.model_type == 'wav':
-            self.len_crop = 128#33536
+        #we use spmel for metadata speaker encoding regardless
+        self.len_crop = 128
 
+        self.subject_conversions = [
+                        (('p226','001'),'p226'),
+                        (('p226','003'),'p336')
+                        ]
+        self.main_dir = config.main_dir
+
+        self.speaker_info = pd.read_csv('speaker_info.txt', delim_whitespace=True)
     
     def metadata(self):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -45,8 +51,6 @@ class Metadata(object):
         print('Found directory: %s' % dirName)
 
         speakers = []
-        i = 0 # for the one-hot encoding
-
         for speaker in sorted(subdirList):
             one_hot_encoding = torch.zeros(len(subdirList))
             print('Processing speaker: %s' % speaker)
@@ -71,7 +75,7 @@ class Metadata(object):
                 emb = C(melsp)
                 embs.append(emb.detach().squeeze().cpu().numpy())     
             utterances.append(np.mean(embs, axis=0)) # average speaker embedding
-
+    
             # create file list
             for fileName in sorted(fileList):
                 utterances.append(os.path.join(speaker,fileName))
@@ -81,20 +85,45 @@ class Metadata(object):
             pickle.dump(speakers, handle)
 
         ######### Our modification: Reading numpy files in speaker embedding ##########
-        if self.speaker_embed: # i.e. not neccessesary for one-hot encoding..
-            with open(os.path.join(self.root_dir, 'train.pkl'), 'rb') as file:
-                train = pickle.load(file)
+        with open(os.path.join(self.root_dir, 'train.pkl'), 'rb') as file:
+            train = pickle.load(file)
+        #construct hash map for easy retrieval    
+        subject_speaker_embedding = {}
+        for embed in train:
+            subject_speaker_embedding[embed[0]] = embed[1]
 
-            #create metadata for testing
-            #Format is [subject, embedding, either mel spect, stft spect or raw wav, sentence numpy filename] 
-            #          [str, (256,), either (x,80) or (x,513), str]
-            metadata = []
-            for subject in train:
-                first_mel_spec = np.load(self.root_dir+'/'+subject[2]) # loading numpy file (not)
-                metadata.append(subject[0:2] + [first_mel_spec] + [subject[2]])
-        
+
+        with open(os.path.join(self.root_dir, 'metadata.log'), 'w') as log:
+            log_ref_int = 0
+            metadata = [] #format is list of conversion metadata [log ref int(eventual filename) [from subject.sentence, from embedding, from sound input], [to subject, to embedding]
+            for conversion in self.subject_conversions:
+                log.write('CONVERSION FILENAME: '+str(log_ref_int) +' ' + '#'*40 + '\n\n')
+                with open(os.path.join(self.main_dir,'txt',conversion[0][0],conversion[0][0] + '_' + conversion[0][1]+'.txt',), 'r') as sentence_file:
+                    sentence = "\"" + sentence_file.readline().rstrip('\n').rstrip() + "\""
+                    log.write(f'Converting from sentence no. {conversion[0][1]} : {sentence} \n')
+                    
+                log.write('Uttered by the speaker:\n')
+                log.write(self.speaker_info[self.speaker_info['ID']==conversion[0][0]].to_string(index=False))
+                log.write('\n')
+
+                log.write('To the speaker:\n')
+                log.write(self.speaker_info[self.speaker_info['ID']==conversion[1]].to_string(index=False))
+                log.write('\n\n')
+
+                #bad use for try/except, checking for mic2. I DON'T CARE. YOLO
+
+                try:
+                    sound_input = np.load(self.root_dir+'/'+conversion[0][0] + '/' + conversion[0][0] + '_' + conversion[0][1] + '_mic2.npy')
+                except:
+                    sound_input = np.load(self.root_dir+'/'+conversion[0][0] + '/' + conversion[0][0] + '_' + conversion[0][1] + '.npy')
+
+                metadata.append([log_ref_int, 
+                                [conversion[0][0]+'_'+conversion[0][1], subject_speaker_embedding[conversion[0][0]], sound_input],
+                                [conversion[1], subject_speaker_embedding[conversion[1]]]
+                                ])
+
+                log_ref_int = log_ref_int + 1
+
             with open(os.path.join(self.root_dir, 'metadata.pkl'), 'wb') as handle:
                 pickle.dump(metadata, handle)
-
-                
-
+        print('Finished generating metadata')
