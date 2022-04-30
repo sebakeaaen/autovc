@@ -6,6 +6,8 @@
 #BSUB -J AutoVC
 ### -- ask for number of cores (default: 1) -- 
 #BSUB -n 1
+### -- Select the resources: 1 gpu in exclusive process mode --
+#BSUB -gpu "num=1:mode=exclusive_process"
 ### -- specify that the cores must be on the same host -- 
 #BSUB -R "span[hosts=1]"
 ### -- For requesting a GPU with 32GB of memory, then please add a
@@ -14,7 +16,6 @@
 #BSUB -R "rusage[mem=32GB]"
 ### -- set walltime limit: hh:mm -- 
 #BSUB -W 24:00
-#BSUB -gpu "num=1"
 ### -- set the email address -- 
 # please uncomment the following line and put in your e-mail address,
 # if you want to receive e-mail notifications on a non-default address
@@ -38,4 +39,4 @@ module load cuda/10.2
 
 module load gcc/9.2.0
 
-python main.py --run_name ditte_wav --len_crop 33536
+python main.py --run_name ditte_stft --model_type wav --len_crop 33536 --depth 1

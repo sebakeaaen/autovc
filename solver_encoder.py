@@ -17,18 +17,26 @@ import numpy as np
 import os
 from sisdr_loss import SingleSrcNegSDR
 
-def pySTFT(self, x):
-    
-    x = np.pad(x, int(self.fft_length//2), mode='reflect')
+cutoff = 30
+fs = 16000
+order = 5
+fft_length = 1024
+hop_length = 256
+n_fft = 1024
+n_mels = 128
 
-    noverlap = self.fft_length - self.hop_length
-    shape = x.shape[:-1]+((x.shape[-1]-noverlap)//self.hop_length, self.fft_length)
-    strides = x.strides[:-1]+(self.hop_length*x.strides[-1], x.strides[-1])
+def pySTFT(x):
+    
+    x = np.pad(x, int(fft_length//2), mode='reflect')
+
+    noverlap = fft_length - hop_length
+    shape = x.shape[:-1]+((x.shape[-1]-noverlap)//hop_length, fft_length)
+    strides = x.strides[:-1]+(hop_length*x.strides[-1], x.strides[-1])
     result = np.lib.stride_tricks.as_strided(x, shape=shape,
                                             strides=strides)
 
-    fft_window = get_window('hann', self.fft_length, fftbins=True)
-    result = np.abs(np.fft.rfft(fft_window * result, n=self.fft_length).T) #inverse function is irfft 
+    fft_window = get_window('hann', fft_length, fftbins=True)
+    result = np.abs(np.fft.rfft(fft_window * result, n=fft_length).T) #inverse function is irfft 
     return result
 
 def plot_mel(x):
@@ -274,7 +282,7 @@ class Solver(object):
                 dot = torch.sum(x_identic * x_real, dim=1, keepdim=True)
                 s_target_energy = torch.sum(x_real ** 2, dim=1, keepdim=True)
                 scaled_target = dot * x_real / s_target_energy
-                e_noise = x_identic - x_real
+                e_noise = x_identic - scaled_target
                 losses = torch.sum(scaled_target ** 2, dim=1) / (torch.sum(e_noise ** 2, dim=1))
                 losses = (10 * torch.log10(losses))
                 g_loss_SISNR = -(losses.mean())
@@ -353,7 +361,10 @@ class Solver(object):
                     axs[0].set(title="Original spectrogram")
                     axs[0].label_outer()
 
-                    x_identic_plot = (x_identic[0].T.detach().cpu().numpy() * 100 - 100).squeeze()
+                    if self.model_type == 'spmel':
+                        x_identic_plot = (x_identic_psnt[0].T.detach().cpu().numpy() * 100 - 100).squeeze()
+                    else:
+                        x_identic_plot = (x_identic[0].T.detach().cpu().numpy() * 100 - 100).squeeze()
 
                     img = display.specshow(
                         x_identic_plot,
