@@ -29,6 +29,8 @@
 #BSUB -e Error_%J.err 
 
 # here follow the commands you want to execute 
+#export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/zhome/8a/1/127380/miniconda3/lib/
+
 source ~/miniconda3/bin/activate
 conda activate py39
 
@@ -38,4 +40,4 @@ module load cuda/10.2
 
 module load gcc/9.2.0
 
-python main.py --run_name ditte_waw --model_type wav --batch_size 2 --len_crop 33536
+python main.py --run_name nina_wav5 --model_type wav --len_crop 33536 --depth 5

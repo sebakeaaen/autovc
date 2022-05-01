@@ -94,7 +94,8 @@ class GeneratorWav(nn.Module):
     def __init__(self, dim_neck, dim_emb, dim_pre, freq, depth):
         super(GeneratorWav, self).__init__()
         
-        self.tasEncoder = Conv1DBlock()
+        #self.tasEncoder = Conv1DBlock()
+        self.tasEncoder = ConvTasNetEncoder(depth)
         self.encoder = Encoder(dim_neck, dim_emb, freq)
         self.decoder = Decoder(dim_neck, dim_emb, dim_pre)
         self.tasDecoder = ConvTasNetDecoder(depth)
@@ -102,7 +103,7 @@ class GeneratorWav(nn.Module):
     def forward(self, x, c_org, c_trg):
         x = x.permute(0,2,1)
 
-        # pass trough conv tas encoder
+        # pass through conv tas encoder
         x = self.tasEncoder(x)
 
         x = x.permute(0,2,1)

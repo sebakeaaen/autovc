@@ -11,9 +11,8 @@ from librosa import display
 print('Started conversion')
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-id = 'autovc' #checkpoint
+id = 'chkpnt_spmel_reproducedAutoVC_new_22April23_1444_43_resumed_resumed_resumed_resumed'#'autovc' #checkpoint
 model_type = 'spmel'
-main_dir = '/work3/dgro/VCTK-Corpus-0'
 
 def pad_seq(x, base=32):
     len_out = int(base * ceil(float(x.shape[0])/base))
@@ -22,11 +21,11 @@ def pad_seq(x, base=32):
     return np.pad(x, ((0,len_pad),(0,0)), 'constant'), len_pad
 
 G = Generator(32,256,512,32).eval().to(device)
-g_checkpoint = torch.load(main_dir+'/models/'+id+'.ckpt', map_location=device)
 
-G.load_state_dict(g_checkpoint['model']) #state_dict for our models
+g_checkpoint = torch.load(id+'.ckpt', map_location=device)
+G.load_state_dict(g_checkpoint['state_dict']) #state_dict for our models
 
-metadata = pickle.load(open(main_dir + '/' + model_type +'/' + 'metadata.pkl', "rb"))
+metadata = pickle.load(open('ninatest/metadata.pkl', "rb"))
 
 spect_vc = []
 
@@ -45,7 +44,7 @@ for conversion in metadata:
         fmax=7_600, 
         sr=16_000,
     )
-    plt.savefig(main_dir + '/' + model_type +'/'+str(conversion[0])+'_original_mel.pdf')
+    plt.savefig('ninatest/'+str(conversion[0])+'_original_mel.pdf')
 
     #TO:               
     emb_trg = torch.from_numpy(conversion[2][1][np.newaxis, :]).to(device)
@@ -72,13 +71,13 @@ for conversion in metadata:
         fmax=7_600, 
         sr=16_000,
     )
-    plt.savefig(main_dir + '/' + model_type +'/'+str(conversion[0])+'_translation_mel.pdf')
+    plt.savefig('ninatest/'+str(conversion[0])+'_translation_mel.pdf')
     
     #carry the filename/conversion identifier in the metadata.log file forward to the vocoder which will create the
     spect_vc.append( (f'{str(conversion[0])}', uttr_trg) )
         
         
-with open(main_dir + '/' + model_type +'/' + 'results_'+id+'.pkl', 'wb') as handle:
+with open('ninatest/results_'+id+'.pkl', 'wb') as handle:
     pickle.dump(spect_vc, handle)
 
 print('Finished conversion...')      

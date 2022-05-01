@@ -23,8 +23,8 @@ class Metadata(object):
         self.len_crop = 128
 
         self.subject_conversions = [ #((original speaker, sentence), target speaker)
-                        (('p226','001'),'p226'),
-                        (('p226','003'),'p336')
+                        (('p002','001'),'p226'),
+                        (('p226','001'),'p002')
                         ]
         self.main_dir = config.main_dir
 
@@ -79,11 +79,14 @@ class Metadata(object):
                 utterances.append(os.path.join(speaker,fileName))
             speakers.append(utterances)
     
-        with open(os.path.join(self.root_dir, 'train.pkl'), 'wb') as handle:
+        #with open(os.path.join(self.root_dir, 'train.pkl'), 'wb') as handle:
+        #    pickle.dump(speakers, handle)
+        with open('train.pkl', 'wb') as handle:
             pickle.dump(speakers, handle)
 
         ######### Our modification: Reading numpy files in speaker embedding ##########
-        with open(os.path.join(self.root_dir, 'train.pkl'), 'rb') as file:
+        #with open(os.path.join(self.root_dir, 'train.pkl'), 'rb') as file:
+        with open('train.pkl', 'rb') as file:
             train = pickle.load(file)
         #construct hash map for easy retrieval    
         subject_speaker_embedding = {}
@@ -91,7 +94,8 @@ class Metadata(object):
             subject_speaker_embedding[embed[0]] = embed[1]
 
 
-        with open(os.path.join(self.root_dir, 'metadata.log'), 'w') as log:
+        #with open(os.path.join(self.root_dir, 'metadata.log'), 'w') as log:
+        with open('metadata.log', 'w') as log:
             log_ref_int = 0
             metadata = [] #format is list of conversion metadata [log ref int(eventual filename), [from subject.sentence, from embedding, from sound input], [to subject, to embedding]
             for conversion in self.subject_conversions:
@@ -122,6 +126,7 @@ class Metadata(object):
 
                 log_ref_int = log_ref_int + 1
 
-            with open(os.path.join(self.root_dir, 'metadata.pkl'), 'wb') as handle:
+            #with open(os.path.join(self.root_dir, 'metadata.pkl'), 'wb') as handle:
+            with open('metadata.pkl', 'wb') as handle:
                 pickle.dump(metadata, handle)
         print('Finished generating metadata')
