@@ -115,7 +115,7 @@ class Solver(object):
             checkpoint = torch.load(self.path, map_location=self.device)
             self.G.load_state_dict(checkpoint['state_dict'])
             self.g_optimizer.load_state_dict(checkpoint['optimizer'])
-            self.iter = checkpoint['iter']
+            self.i = checkpoint['i']
             self.loss = checkpoint['loss']
 
             ''' 
@@ -155,10 +155,10 @@ class Solver(object):
         keys = ['G/loss_id','G/loss_id_psnt','G/loss_cd']
 
         if self.file_exists:
-            iter_start = self.iter
-            print('Continue from iteration: ',iter_start)
+            i_start = self.i
+            print('Continue from iteration: ',i_start)
         else:
-            iter_start = 0
+            i_start = 0
 
         # Start training.
         print('Starting training...')
@@ -168,7 +168,7 @@ class Solver(object):
 
         wandb.watch(self.G, log = None)
 
-        for iter in range(iter_start, self.num_iters):
+        for i in range(i_start, self.num_iters):
 
             # =================================================================================== #
             #                             1. Preprocess input data                                #
@@ -282,10 +282,10 @@ class Solver(object):
             # =================================================================================== #
 
             # Print out training information.
-            if (iter+1) % self.log_step == 0:
+            if (i+1) % self.log_step == 0:
                 et = time.time() - start_time
                 et = str(datetime.timedelta(seconds=et))[:-7]
-                log = "Elapsed [{}], Iteration [{}/{}]".format(et, iter, self.num_iters)
+                log = "Elapsed [{}], Iteration [{}/{}]".format(et, i, self.num_iters)
                 for tag in keys:
                     log += ", {}: {:.4f}".format(tag, loss[tag])
                 print(log)
@@ -293,7 +293,7 @@ class Solver(object):
                 # Save model checkpoint.
                 self.model_EMA() # loading model with average parameters
                 state = {
-                    'iter': iter,
+                    'i': i,
                     'state_dict': self.G.state_dict(), # OBS! this is for averaged weights
                     'optimizer': self.g_optimizer.state_dict(),
                     'loss': loss
@@ -335,11 +335,11 @@ class Solver(object):
                     axs[1].set(title="Converted spectrogram")
                     #fig.suptitle(f"{'git money git gud'}") #self.CHECKPOINT_DIR / Path(subject[0]).stem
                     fig.colorbar(img, ax=axs)
-                    wandb.log({"Train spectrograms": wandb.Image(fig)}, step=iter)
+                    wandb.log({"Train spectrograms": wandb.Image(fig)}, step=i)
                     plt.close()
                 
                 # For weights and biases.
-                wandb.log({"iter": iter,
+                wandb.log({"i": i,
                         "lr": lr,
                         "g_loss_id": g_loss_id.item(), # L_recon
                         "g_loss_id_psnt": g_loss_id_psnt.item(), # L_recon0

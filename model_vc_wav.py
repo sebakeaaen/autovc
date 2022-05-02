@@ -8,93 +8,50 @@ from model_vc_mel import Encoder, Decoder
 # implement ConvTasEncoder and ConvTasDecoder modules like this (PRelu not Dilation)
 # https://github.com/JusperLee/Deep-Encoder-Decoder-Conv-TasNet
 
-class Conv1DBlock(nn.Module):
-    def __init__(self, in_channel = 1, out_channel = 80, conv_channel = 256, kernel_size = 3, padding = 1):
-        super(Conv1DBlock, self).__init__()
-
-        self.convBlock = nn.Sequential(
-                        nn.Conv1d(in_channel, conv_channel, kernel_size = 1, padding = 0),
-                        nn.PReLU(),
-                        nn.Conv1d(conv_channel, conv_channel, kernel_size = kernel_size, padding = padding, bias = True),
-                        nn.PReLU(),
-                        nn.Conv1d(conv_channel, out_channel, kernel_size = 1, padding = 0),
-        )
-
-    def forward(self, x):
-        return self.convBlock(x)
-
 class ConvTasNetEncoder(nn.Module):
-    def __init__(self, enc_dim=80, sr=16000, kernel_size=3, depth=1):
+    def __init__(self, in_channel=1, conv_channel=80, depth=1):
         super(ConvTasNetEncoder, self).__init__()
 
-        #self.kernel_size = int(sr*kernel_size/1000) # is this neccessary?
-        stride = kernel_size // 2
-        padding = kernel_size // 2
+        self.conv1x1 = nn.Conv1d(in_channel, conv_channel, kernel_size = 16, stride = 16//2, padding = 0),
         
-        # input encoder
-        if depth == 1:
-            self.encoder = nn.Sequential(nn.Conv1d(1, enc_dim, kernel_size, stride, padding),
+        convolutions = []
+        for i in range(depth):
+            conv_layer = nn.Sequential(
+                nn.Conv1d(conv_channel, conv_channel, kernel_size = 3, stride=1, padding = 1),
                 nn.PReLU())
-        elif depth == 3:
-            self.encoder = nn.Sequential(
-                nn.Conv1d(1, enc_dim, kernel_size, stride, padding),
-                nn.PReLU(),
-                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1),
-                nn.PReLU(),
-                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1),
-                nn.PReLU())
-        elif depth == 5:
-            self.encoder = nn.Sequential(
-                nn.Conv1d(1, enc_dim, kernel_size, stride, padding),
-                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1),
-                nn.PReLU(),
-                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1),
-                nn.PReLU(),
-                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1),
-                nn.PReLU(),
-                nn.Conv1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1),
-                nn.PReLU())
-        else: print('Model not defined for this depth')
+            convolutions.append(conv_layer)
+        self.convD = nn.ModuleList(convolutions)
     
     def forward(self, x):
-        return self.encoder(x)
+        x = self.conv1x1(x)
+        x = self.convD(x)
+        return x
 
 
 class ConvTasNetDecoder(nn.Module):
-    def __init__(self, enc_dim=80, sr=16000, kernel_size=3, depth=1):
+    def __init__(self, conv_channel=80, out_channel=1, depth=1):
         super(ConvTasNetDecoder, self).__init__()
         
-        #self.kernel_size = int(sr*kernel_size/1000) # is this neccessary?
-        stride = kernel_size // 2
-        padding = kernel_size // 2
-        
-        # output decoder
-        if depth == 1:
-            self.decoder = nn.Sequential(
-                nn.ConvTranspose1d(80, 1, kernel_size=3, stride=1, padding=1, bias=False))
-        elif depth == 3:
-            self.decoder = nn.Sequential(
-                nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.ConvTranspose1d(enc_dim, 1, kernel_size, stride, padding, bias=False))
-        elif depth == 5:
-            self.encoder = nn.Sequential(
-                nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.ConvTranspose1d(enc_dim, enc_dim, kernel_size=3, stride=1, padding=1, bias=False),
-                nn.ConvTranspose1d(enc_dim, 1, kernel_size, stride, padding, bias=False))
-        else: print('Model not defined for this depth')
+        convolutions = []
+        for i in range(depth):
+            conv_layer = nn.Sequential(
+                nn.ConvTranspose1d(conv_channel, conv_channel, kernel_size = 3, stride=1, padding = 1),
+                nn.PReLU())
+            convolutions.append(conv_layer)
+        self.convTD = nn.ModuleList(convolutions)
 
+        self.convT1x1 = nn.Conv1d(conv_channel, out_channel, kernel_size = 16, stride = 16//2, padding = 0),
+        
     def forward(self, x):
-        return self.decoder(x) 
+        x = self.convTD(x)
+        x = self.convT1x1(x)
+        return x
 
 class GeneratorWav(nn.Module):
     """Generator network."""
     def __init__(self, dim_neck, dim_emb, dim_pre, freq, depth):
         super(GeneratorWav, self).__init__()
         
-        #self.tasEncoder = Conv1DBlock()
         self.tasEncoder = ConvTasNetEncoder(depth)
         self.encoder = Encoder(dim_neck, dim_emb, freq)
         self.decoder = Decoder(dim_neck, dim_emb, dim_pre)
