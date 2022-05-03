@@ -1,0 +1,3 @@
+The results are subdevided into 3 folders based on the respective input to the AutoVC model.
+Each folder conatins a number of mel spectograms and audio files which are numbered. The numbering in the files may be cross referenced with the metadata.log file in the same folder to trace what sentence is spoken, and which speakers are the originator and convertee respectively.
+The mel spectograms reference both the origianl sentence and the converted sentence, i.e. before and after conversion. The audio file is the converted input.
