@@ -180,7 +180,7 @@ class Solver(object):
             except:
                 data_iter = iter(data_loader)
                 x_real, emb_org = next(data_iter)
-            
+
             x_real = x_real.to(self.device)
             emb_org = emb_org.to(self.device)
                         
@@ -191,13 +191,13 @@ class Solver(object):
                         
             # Identity mapping loss
             if self.model_type == 'wav':
-                x_convtas, x_identic, gen_outputs, code_real = self.G(x_real, emb_org, emb_org)
+                x_CTencoder, x_identic, x_decoder, code_real = self.G(x_real, emb_org, emb_org)
 
                 # L_recon
                 g_loss_id = F.mse_loss(x_real.squeeze(), x_identic.squeeze())
 
                 # loss for generator
-                g_loss_gen = F.mse_loss(x_convtas.squeeze(), gen_outputs.squeeze()) # loss for data generated specs
+                g_loss_gen = F.mse_loss(x_CTencoder.squeeze(), x_decoder.squeeze()) # loss for data generated specs
                 
                 # L_content: Code semantic loss
                 code_reconst = self.G(x_identic, emb_org, None)
