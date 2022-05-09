@@ -74,16 +74,15 @@ class Spect(object):
                     y = signal.filtfilt(b, a, x)
                     # Add a little random noise for model roubstness
                     wav = y * 0.96 + (prng.rand(y.shape[0])-0.5)*1e-06
+                    # Compute spect
+                    D = self.pySTFT(wav)
                     if self.model_type == 'spmel': # save mel spec
-                        # Compute spect
-                        D = self.pySTFT(wav)
                         # Convert to mel and normalize
                         D_mel = np.dot(D.T, mel_basis)
                         D_db = 20 * np.log10(np.maximum(min_level, D_mel)) - 16
                         S = np.clip((D_db + 100) / 100, 0, 1)  
-                    if self.model_type == 'stft': # save stft
-                        D = self.pySTFT(wav)
-                        D_db = 20 * np.log10(min_level) - 16
+                    elif self.model_type == 'stft': # save stft
+                        D_db = 20 * np.log10(np.maximum(min_level, D)) - 16
                         S = np.clip((D_db + 100) / 100, 0, 1)  
                     elif self.model_type == 'wav':
                         S = (RobustScaler(quantile_range=(5.0, 95.0)).fit_transform(wav.reshape(-1, 1))) # dim 1xL
@@ -91,5 +90,5 @@ class Spect(object):
                         raise ValueError('You entered a wrong model_type homie')
                     # save spect
                     idx = fileName.rfind('.')
-                    np.save(os.path.join(saveDir, subdir, fileName[:idx]), # -5 if flac files, -4 if wav files
+                    np.save(os.path.join(saveDir, subdir, fileName[:idx]),
                         S.astype(np.float32), allow_pickle=False)

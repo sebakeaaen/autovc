@@ -114,11 +114,6 @@ class GeneratorTasNet(nn.Module):
         
         encoder_outputs = torch.cat((code_exp, c_trg.unsqueeze(1).expand(-1,x.size(1),-1)), dim=-1)
         
-<<<<<<< HEAD
-        stft_outputs = self.model.decoder(encoder_outputs)
-        
-        return stft_outputs, torch.cat(codes, dim=-1)
-=======
         x_identic = self.model.decoder(encoder_outputs)
 
         x_identic_psnt = self.model.postnet(x_identic.transpose(2,1))
@@ -137,4 +132,3 @@ class GeneratorTasNet(nn.Module):
         
         #return stft_outputs, stft_outputs_postnet, torch.cat(codes, dim=-1)
 '''
->>>>>>> c3fbb50b0d14314b19440c7549e8da982cb29020

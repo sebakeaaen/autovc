@@ -30,6 +30,8 @@
 #BSUB -e Error_%J.err 
 
 # here follow the commands you want to execute 
+#export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/zhome/8a/1/127380/miniconda3/lib/
+
 source ~/miniconda3/bin/activate
 conda activate py39
 

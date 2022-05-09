@@ -22,10 +22,15 @@ class Metadata(object):
         #we use spmel for metadata speaker encoding regardless
         self.len_crop = 128
 
-        self.subject_conversions = [
-                        (('p226','001'),'p226'),
-                        (('p226','003'),'p336')
-                        ]
+        self.subject_conversions = [ #((original speaker, sentence), target speaker)
+                        (('p002','020'),'p002'), #(identic)
+                        (('p002','020'),'p227'), #seen sentence, between different genders
+                        (('p002', '020'), 'p003'), # unseen subject, seen sentence 
+                        (('p003', '4019'), 'p002'), # unseen cubject and sentence
+                        (('p225', '001'), 'p225'), 
+                        (('p225', '001'), 'p227'), # like autovc paper
+                        (('p227', '001'), 'p225'),
+                        (('p227', '003'), 'p002')]
         self.main_dir = config.main_dir
 
         self.speaker_info = pd.read_csv('speaker_info.txt', delim_whitespace=True)
@@ -34,13 +39,12 @@ class Metadata(object):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         C = D_VECTOR(dim_input=80, dim_cell=768, dim_emb=256).eval().to(device)
         
-        if self.speaker_embed:
-            c_checkpoint = torch.load('3000000-BL.ckpt',map_location=device)
-            new_state_dict = OrderedDict()
-            for key, val in c_checkpoint['model_b'].items():
-                new_key = key[7:]
-                new_state_dict[new_key] = val
-            C.load_state_dict(new_state_dict)
+        c_checkpoint = torch.load('3000000-BL.ckpt',map_location=device)
+        new_state_dict = OrderedDict()
+        for key, val in c_checkpoint['model_b'].items():
+            new_key = key[7:]
+            new_state_dict[new_key] = val
+        C.load_state_dict(new_state_dict)
 
         num_uttrs = self.num_uttrs
         len_crop = self.len_crop
@@ -70,7 +74,7 @@ class Metadata(object):
                     tmp = np.load(os.path.join(dirName, speaker, fileList[idx_alt]))
                     candidates = np.delete(candidates, np.argwhere(candidates==idx_alt))
                 left = np.random.randint(0, tmp.shape[0]-len_crop)
-                melsp = torch.from_numpy(tmp[np.newaxis, left:left+len_crop, :]).cuda()
+                melsp = torch.from_numpy(tmp[np.newaxis, left:left+len_crop, :]).to(device)
                 emb = C(melsp)
                 embs.append(emb.detach().squeeze().cpu().numpy())     
             utterances.append(np.mean(embs, axis=0)) # average speaker embedding
@@ -93,8 +97,9 @@ class Metadata(object):
 
 
         with open(os.path.join(self.root_dir, 'metadata.log'), 'w') as log:
+        #with open('metadata.log', 'w') as log:
             log_ref_int = 0
-            metadata = [] #format is list of conversion metadata [log ref int(eventual filename) [from subject.sentence, from embedding, from sound input], [to subject, to embedding]
+            metadata = [] #format is list of conversion metadata [log ref int(eventual filename), [from subject.sentence, from embedding, from sound input], [to subject, to embedding]
             for conversion in self.subject_conversions:
                 log.write('CONVERSION FILENAME: '+str(log_ref_int) +' ' + '#'*40 + '\n\n')
                 with open(os.path.join(self.main_dir,'txt',conversion[0][0],conversion[0][0] + '_' + conversion[0][1]+'.txt',), 'r') as sentence_file:

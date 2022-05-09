@@ -72,7 +72,7 @@ class Solver(object):
 
         # Training configurations.
         self.batch_size = config.batch_size
-        self.num_epochs = config.num_epochs
+        self.num_iters = config.num_iters
         self.ema = config.ema
         self.run_name = config.run_name
         self.resume = config.resume
@@ -145,11 +145,11 @@ class Solver(object):
             self.lr_scheduler = None
 
         if self.file_exists:
-            print('Loading checkpoint.')
+            print('Loading checkpoint: chkpnt_' + self.model_type + '_' + self.run_name + '.ckpt')
             checkpoint = torch.load(self.path, map_location=self.device)
             self.G.load_state_dict(checkpoint['state_dict'])
             self.g_optimizer.load_state_dict(checkpoint['optimizer'])
-            self.epoch = checkpoint['epoch']
+            self.iter = checkpoint['iter']
             self.loss = checkpoint['loss']
 
             ''' 
@@ -189,10 +189,10 @@ class Solver(object):
         keys = ['G/loss_id','G/loss_id_psnt','G/loss_cd']
 
         if self.file_exists:
-            epoch_start = self.epoch
-            print('Continue from epoch: ', epoch_start)
+            iter_start = self.iter
+            print('Continue from iteration: ',iter_start)
         else:
-            epoch_start = 0
+            iter_start = 0
 
         # Start training.
         print('Starting training...')
@@ -202,7 +202,7 @@ class Solver(object):
 
         wandb.watch(self.G, log = None)
 
-        for epoch in range(epoch_start, self.num_epochs):
+        for iter in range(iter_start, self.num_iters):
 
             epoch = epoch + 1
 
@@ -325,7 +325,7 @@ class Solver(object):
             if (epoch) % self.log_step == 0:
                 et = time.time() - start_time
                 et = str(datetime.timedelta(seconds=et))[:-7]
-                log = "Elapsed [{}], Iteration [{}/{}]".format(et, epoch, self.num_epochs)
+                log = "Elapsed [{}], Iteration [{}/{}]".format(et, iter, self.num_iters)
                 for tag in keys:
                     log += ", {}: {:.4f}".format(tag, loss[tag])
                 print(log)
@@ -333,7 +333,7 @@ class Solver(object):
                 # Save model checkpoint.
                 self.model_EMA() # loading model with average parameters
                 state = {
-                    'epoch': epoch,
+                    'iter': iter,
                     'state_dict': self.G.state_dict(), # OBS! this is for averaged weights
                     'optimizer': self.g_optimizer.state_dict(),
                     'loss': loss
@@ -378,7 +378,7 @@ class Solver(object):
                     axs[1].set(title="Converted spectrogram")
                     #fig.suptitle(f"{'git money git gud'}") #self.CHECKPOINT_DIR / Path(subject[0]).stem
                     fig.colorbar(img, ax=axs)
-                    wandb.log({"Train spectrograms": wandb.Image(fig)}, step=epoch)
+                    wandb.log({"Train spectrograms": wandb.Image(fig)}, step=iter)
                     plt.close()
                 else:
                     mel_spec_real = plot_mel(x_real[0].detach().cpu().numpy())
@@ -413,7 +413,7 @@ class Solver(object):
                     plt.close()
 
                 # For weights and biases.
-                wandb.log({"epoch": epoch,
+                wandb.log({"iter": iter,
                         "lr": lr,
                         "g_loss_id": g_loss_id.item(), # L_recon
                         "g_loss_id_psnt": g_loss_id_psnt.item(), # L_recon0
