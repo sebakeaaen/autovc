@@ -41,4 +41,4 @@ module load cuda/10.2
 
 module load gcc/9.2.0
 
-python main.py --run_name ditte_stft --model_type wav --len_crop 33536 --depth 1
+python main.py --run_name nina_wav1_scale --model_type wav --len_crop 33536 --depth 1 --lambda_SISNR 0.1

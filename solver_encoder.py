@@ -149,7 +149,7 @@ class Solver(object):
             checkpoint = torch.load(self.path, map_location=self.device)
             self.G.load_state_dict(checkpoint['state_dict'])
             self.g_optimizer.load_state_dict(checkpoint['optimizer'])
-            self.iter = checkpoint['iter']
+            self.i = checkpoint['i']
             self.loss = checkpoint['loss']
 
             ''' 
@@ -189,10 +189,10 @@ class Solver(object):
         keys = ['G/loss_id','G/loss_id_psnt','G/loss_cd']
 
         if self.file_exists:
-            iter_start = self.iter
-            print('Continue from iteration: ',iter_start)
+            i_start = self.i
+            print('Continue from iteration: ',i_start)
         else:
-            iter_start = 0
+            i_start = 0
 
         # Start training.
         print('Starting training...')
@@ -202,7 +202,7 @@ class Solver(object):
 
         wandb.watch(self.G, log = None)
 
-        for iter in range(iter_start, self.num_iters):
+        for i in range(i_start, self.num_iters):
 
             epoch = epoch + 1
 
@@ -216,7 +216,7 @@ class Solver(object):
             except:
                 data_iter = iter(data_loader)
                 x_real, emb_org = next(data_iter)
-            
+
             x_real = x_real.to(self.device)
             emb_org = emb_org.to(self.device)
                         
@@ -225,7 +225,19 @@ class Solver(object):
             #                               2. Train the generator                                #
             # =================================================================================== #
                         
-            if self.model_type == 'spmel':
+            # Identity mapping loss
+            if self.model_type == 'wav':
+                x_CTencoder, x_identic, x_decoder, code_real = self.G(x_real, emb_org, emb_org)
+
+                # L_recon
+                g_loss_id = F.mse_loss(x_real.squeeze(), x_identic.squeeze())
+
+                # loss for generator
+                g_loss_gen = F.mse_loss(x_CTencoder.squeeze(), x_decoder.squeeze()) # loss for data generated specs
+                
+                # L_content: Code semantic loss
+                code_reconst = self.G(x_identic, emb_org, None)
+            else:
                 x_identic, x_identic_psnt, code_real = self.G(x_real, emb_org, emb_org)
                 # L_recon
                 g_loss_id = F.mse_loss(x_real.squeeze(), x_identic.squeeze()) 
@@ -243,7 +255,7 @@ class Solver(object):
                 # Total loss
                 g_loss = g_loss_id + g_loss_id_psnt + self.lambda_cd * g_loss_cd
 
-            elif self.model_type == 'stft':
+            if self.model_type == 'stft':
                 x_identic, code_real = self.G(x_real, emb_org, emb_org)
                 # L_recon
                 g_loss_id = F.mse_loss(x_real.squeeze(), x_identic.squeeze()) 
@@ -325,7 +337,7 @@ class Solver(object):
             if (epoch) % self.log_step == 0:
                 et = time.time() - start_time
                 et = str(datetime.timedelta(seconds=et))[:-7]
-                log = "Elapsed [{}], Iteration [{}/{}]".format(et, iter, self.num_iters)
+                log = "Elapsed [{}], Iteration [{}/{}]".format(et, epoch, self.num_iters)
                 for tag in keys:
                     log += ", {}: {:.4f}".format(tag, loss[tag])
                 print(log)
@@ -333,7 +345,7 @@ class Solver(object):
                 # Save model checkpoint.
                 self.model_EMA() # loading model with average parameters
                 state = {
-                    'iter': iter,
+                    'i': i,
                     'state_dict': self.G.state_dict(), # OBS! this is for averaged weights
                     'optimizer': self.g_optimizer.state_dict(),
                     'loss': loss
@@ -378,7 +390,7 @@ class Solver(object):
                     axs[1].set(title="Converted spectrogram")
                     #fig.suptitle(f"{'git money git gud'}") #self.CHECKPOINT_DIR / Path(subject[0]).stem
                     fig.colorbar(img, ax=axs)
-                    wandb.log({"Train spectrograms": wandb.Image(fig)}, step=iter)
+                    wandb.log({"Train spectrograms": wandb.Image(fig)}, step=i)
                     plt.close()
                 else:
                     mel_spec_real = plot_mel(x_real[0].detach().cpu().numpy())
@@ -413,7 +425,7 @@ class Solver(object):
                     plt.close()
 
                 # For weights and biases.
-                wandb.log({"iter": iter,
+                wandb.log({"i": i,
                         "lr": lr,
                         "g_loss_id": g_loss_id.item(), # L_recon
                         "g_loss_id_psnt": g_loss_id_psnt.item(), # L_recon0
