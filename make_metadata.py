@@ -23,14 +23,15 @@ class Metadata(object):
         self.len_crop = 128
 
         self.subject_conversions = [ #((original speaker, sentence), target speaker)
-                        (('p002','020'),'p002'), #(identic)
-                        (('p002','020'),'p227'), #seen sentence, between different genders
-                        (('p002', '020'), 'p003'), # unseen subject, seen sentence 
-                        (('p003', '4019'), 'p002'), # unseen cubject and sentence
+                        #(('p002','020'),'p002'), #(identic)
+                        #(('p002','020'),'p227'), #seen sentence, between different genders
+                        #(('p002', '020'), 'p003'), # unseen subject, seen sentence 
+                        #(('p003', '4019'), 'p002'), # unseen cubject and sentence
                         (('p225', '001'), 'p225'), 
-                        (('p225', '001'), 'p227'), # like autovc paper
-                        (('p227', '001'), 'p225'),
-                        (('p227', '003'), 'p002')]
+                        #(('p225', '001'), 'p227'), # like autovc paper
+                        #(('p227', '001'), 'p225'),
+                        #(('p227', '003'), 'p002')
+                        ]
         self.main_dir = config.main_dir
 
         self.speaker_info = pd.read_csv('speaker_info.txt', delim_whitespace=True)

@@ -149,7 +149,7 @@ class Solver(object):
             checkpoint = torch.load(self.path, map_location=self.device)
             self.G.load_state_dict(checkpoint['state_dict'])
             self.g_optimizer.load_state_dict(checkpoint['optimizer'])
-            self.i = checkpoint['i']
+            self.i = checkpoint['epoch']
             self.loss = checkpoint['loss']
 
             ''' 
@@ -204,8 +204,6 @@ class Solver(object):
 
         for i in range(i_start, self.num_iters):
 
-            epoch = epoch + 1
-
             # =================================================================================== #
             #                             1. Preprocess input data                                #
             # =================================================================================== #
@@ -226,18 +224,7 @@ class Solver(object):
             # =================================================================================== #
                         
             # Identity mapping loss
-            if self.model_type == 'wav':
-                x_CTencoder, x_identic, x_decoder, code_real = self.G(x_real, emb_org, emb_org)
-
-                # L_recon
-                g_loss_id = F.mse_loss(x_real.squeeze(), x_identic.squeeze())
-
-                # loss for generator
-                g_loss_gen = F.mse_loss(x_CTencoder.squeeze(), x_decoder.squeeze()) # loss for data generated specs
-                
-                # L_content: Code semantic loss
-                code_reconst = self.G(x_identic, emb_org, None)
-            else:
+            if self.model_type in ('spmel','stft'):
                 x_identic, x_identic_psnt, code_real = self.G(x_real, emb_org, emb_org)
                 # L_recon
                 g_loss_id = F.mse_loss(x_real.squeeze(), x_identic.squeeze()) 
@@ -255,24 +242,24 @@ class Solver(object):
                 # Total loss
                 g_loss = g_loss_id + g_loss_id_psnt + self.lambda_cd * g_loss_cd
 
-            if self.model_type == 'stft':
-                x_identic, code_real = self.G(x_real, emb_org, emb_org)
-                # L_recon
-                g_loss_id = F.mse_loss(x_real.squeeze(), x_identic.squeeze()) 
+            # elif self.model_type == 'stft':
+            #     x_identic, code_real = self.G(x_real, emb_org, emb_org)
+            #     # L_recon
+            #     g_loss_id = F.mse_loss(x_real.squeeze(), x_identic.squeeze()) 
 
-                code_reconst = self.G(x_identic, emb_org, None) 
-                g_loss_cd = F.l1_loss(code_real, code_reconst)
+            #     code_reconst = self.G(x_identic, emb_org, None) 
+            #     g_loss_cd = F.l1_loss(code_real, code_reconst)
 
-                # L_recon0
-                # set postnet loss to nan (since we found out that postnet makes no difference)
-                g_loss_id_psnt = torch.tensor(float('nan'))
+            #     # L_recon0
+            #     # set postnet loss to nan (since we found out that postnet makes no difference)
+            #     g_loss_id_psnt = torch.tensor(float('nan'))
 
-                # L_SISNR: SI-SNR loss
-                # not used for stft model
-                g_loss_SISNR = torch.tensor(float('nan'))
+            #     # L_SISNR: SI-SNR loss
+            #     # not used for stft model
+            #     g_loss_SISNR = torch.tensor(float('nan'))
 
-                # Total loss
-                g_loss = g_loss_id + self.lambda_cd * g_loss_cd
+            #     # Total loss
+            #     g_loss = g_loss_id + self.lambda_cd * g_loss_cd
 
             elif self.model_type == 'wav':
                 x_convtas, x_identic, gen_outputs, code_real = self.G(x_real, emb_org, emb_org)
@@ -334,18 +321,18 @@ class Solver(object):
             # =================================================================================== #
 
             # Print out training information.
-            if (epoch) % self.log_step == 0:
+            if (i+1) % self.log_step == 0:
                 et = time.time() - start_time
                 et = str(datetime.timedelta(seconds=et))[:-7]
-                log = "Elapsed [{}], Iteration [{}/{}]".format(et, epoch, self.num_iters)
+                log = "Elapsed [{}], Iteration [{}/{}]".format(et, i+1, self.num_iters)
                 for tag in keys:
                     log += ", {}: {:.4f}".format(tag, loss[tag])
-                print(log)
+                #print(log)
 
                 # Save model checkpoint.
                 self.model_EMA() # loading model with average parameters
                 state = {
-                    'i': i,
+                    'epoch': i+1,
                     'state_dict': self.G.state_dict(), # OBS! this is for averaged weights
                     'optimizer': self.g_optimizer.state_dict(),
                     'loss': loss
@@ -373,13 +360,13 @@ class Solver(object):
                     axs[0].set(title="Original spectrogram")
                     axs[0].label_outer()
 
-                    if self.model_type == 'spmel':
-                        x_identic_plot = (x_identic_psnt[0].T.detach().cpu().numpy() * 100 - 100).squeeze()
-                    else:
-                        x_identic_plot = (x_identic[0].T.detach().cpu().numpy() * 100 - 100).squeeze()
+                    # if self.model_type == 'spmel':
+                    #     x_identic_plot = (x_identic_psnt[0].T.detach().cpu().numpy() * 100 - 100).squeeze()
+                    # else:
+                    #     x_identic_plot = (x_identic[0].T.detach().cpu().numpy() * 100 - 100).squeeze()
 
                     img = display.specshow(
-                        x_identic_plot,
+                        x_identic_psnt[0].T.detach().cpu().numpy() * 100 - 100,
                         y_axis=("mel" if self.model_type == 'spmel' else "fft"),
                         x_axis="time",
                         fmin=90,
@@ -421,12 +408,13 @@ class Solver(object):
                     axs[1].set(title="Converted spectrogram")
                     #fig.suptitle(f"{'git money git gud'}") #self.CHECKPOINT_DIR / Path(subject[0]).stem
                     fig.colorbar(img, ax=axs)
-                    wandb.log({"Train spectrograms": wandb.Image(fig)}, step=epoch)
+                    wandb.log({"Train spectrograms": wandb.Image(fig)}, step=i+1)
                     plt.close()
 
                 # For weights and biases.
                 wandb.log({"i": i,
                         "lr": lr,
+                        "g_loss": g_loss.item(),
                         "g_loss_id": g_loss_id.item(), # L_recon
                         "g_loss_id_psnt": g_loss_id_psnt.item(), # L_recon0
                         "g_loss_cd": g_loss_cd.item(), # L_content

@@ -41,15 +41,16 @@ class GeneratorSTFT(nn.Module):
         
         encoder_outputs = torch.cat((code_exp, c_trg.unsqueeze(1).expand(-1,x.size(1),-1)), dim=-1)
         
-        x_identic = self.model.decoder(encoder_outputs)
+        x_identic = self.decoder(encoder_outputs)
 
-        x_identic_psnt = self.model.postnet(x_identic.transpose(2,1))
+        x_identic_psnt = self.postnet(x_identic.transpose(2,1))
         x_identic_psnt = x_identic + x_identic_psnt.transpose(2,1)
-        
+
+        x_identic = x_identic.unsqueeze(1)
+        x_identic_psnt = x_identic_psnt.unsqueeze(1)
         code_real = torch.cat(codes, dim=-1)
 
         return x_identic, x_identic_psnt, code_real
-
 '''
 class GeneratorTasNet(nn.Module):
     """Generator network for STFT. Based on the pretrained model AutoVC"""

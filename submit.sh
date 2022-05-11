@@ -41,4 +41,5 @@ module load cuda/10.2
 
 module load gcc/9.2.0
 
-python main.py --run_name nina_wav1_scale --model_type wav --len_crop 33536 --depth 1 --lambda_SISNR 0.1
+python main.py --run_name wav1_22May09_2002_40 --model_type wav --depth 1 --len_crop 33536 --lambda_SISNR 0.2 --lr 0.0001 --run_id 1oxc1xci --resume True
+#python main.py --run_name stft_wPost --model_type stft
